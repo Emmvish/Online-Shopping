@@ -14,3 +14,7 @@ This application offers the following features to its users (site admins, retail
 8. Customers can search on the names of products as well as retailers, by passing a search term.
 9. Every customer is allocated a cart to place their products in, so that they can order these products at the end of their shopping activity.
 10. Forbidden or rejected products do not appear to the customers, in their search results.
+
+Every microservice has been thoroughly tested using JEST unit testing framework. 
+
+Every microservice folder contains a Jenkinsfile and 2 Dockerfiles - one for testing level container and the other for production grade server. So, every microservice can be deployed inside its own Docker container at some testing / production site using Jenkins.
