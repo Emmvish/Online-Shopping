@@ -1,0 +1,109 @@
+// DOCKER COMPOSE METHOD
+
+pipeline {
+    agent { label 'linux' }
+    stages {      
+        stage('Cleanup') {
+            steps {
+                sh 'docker-compose stop production-product development-product'
+                sh 'docker-compose rm production-product development-product'
+                sh 'rm -r *'
+            }
+        }
+        stage('Clone') {
+            steps {
+                sh 'git clone https://github.com/Emmvish/Online-Shopping.git .'
+                sh "find . -mindepth 1  ! -regex '^./product\(/.*\)?' -delete"
+            }
+        }
+        stage('Test & Deploy') {
+            steps {
+                sh 'cd product && docker-compose up --detach --build production-product development-product'
+            }
+        }
+    }
+} 
+
+
+// PURE DOCKER CLIENT METHOD
+
+// pipeline {
+//     agent { label 'linux' }
+//     stages {      
+//         stage('Cleanup') {
+//             steps {
+//                 sh 'docker stop product product-test'
+//                 sh 'docker rm product product-test'
+//                 sh 'rm -r *'
+//             }
+//         }
+//         stage('Clone') {
+//             steps {
+//                 sh 'git clone https://github.com/Emmvish/Online-Shopping.git .'
+//                 sh "find . -mindepth 1  ! -regex '^./product\(/.*\)?' -delete"
+//             }
+//         }
+//         stage('Test') {
+//             steps {
+//                 sh 'cd product && docker build -f Dockerfile.dev -t emmvish/product-test:latest .'
+//                 sh 'docker run -d --name product-test emmvish/product-test:latest '
+//             }
+//         }
+//         stage('Deploy') {
+//             steps {
+//                 sh 'cd product && docker build -t emmvish/product:latest .'
+//                 sh 'docker run -d -p 4004:4004 --name product emmvish/product:latest'
+//             }
+//         }
+//     }
+// } 
+
+
+// JENKINS-DOCKER PLUGIN METHOD
+
+// pipeline {
+//     agent { label 'linux' }
+//     stages {      
+//         stage('Cleanup') {
+//             steps {
+//                 sh 'docker stop frontend frontend-test'
+//                 sh 'docker rm frontend frontend-test'
+//                 sh 'rm -r *'
+//             }
+//         }
+//         stage('Clone') {
+//             steps {
+//                 sh 'git clone https://github.com/Emmvish/Online-Shopping.git .'
+//                 sh "find . -mindepth 1  ! -regex '^./product\(/.*\)?' -delete"
+//             }
+//         }
+//         stage('Test') {
+//             agent {
+//                 dockerfile { 
+// 			           filename 'Dockerfile.dev'
+//                     dir 'product'
+//                     label 'linux'
+//                     args '-d --name product-test'
+// 		        }
+//             }
+//             steps {
+//                 sh 'node -v'
+//                 sh 'npm -v'
+//             }
+//         }
+//         stage('Deploy') {
+//             agent {
+//                 dockerfile { 
+// 			           filename 'Dockerfile'
+//                     dir 'product'
+//                     label 'linux'
+//                     args '-d -p 4004:4004 --name product'
+// 		        }
+//             }
+//             steps {
+//                 sh 'node -v'
+//                 sh 'npm -v'
+//             }
+//         }
+//     }
+// } 

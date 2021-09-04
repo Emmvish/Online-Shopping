@@ -1,0 +1,109 @@
+// DOCKER COMPOSE METHOD
+
+pipeline {
+    agent { label 'linux' }
+    stages {      
+        stage('Cleanup') {
+            steps {
+                sh 'docker-compose stop production-moderation development-moderation'
+                sh 'docker-compose rm production-moderation development-moderation'
+                sh 'rm -r *'
+            }
+        }
+        stage('Clone') {
+            steps {
+                sh 'git clone https://github.com/Emmvish/Online-Shopping.git .'
+                sh "find . -mindepth 1  ! -regex '^./moderation\(/.*\)?' -delete"
+            }
+        }
+        stage('Test & Deploy') {
+            steps {
+                sh 'cd moderation && docker-compose up --detach --build production-moderation development-moderation'
+            }
+        }
+    }
+} 
+
+
+// PURE DOCKER CLIENT METHOD
+
+// pipeline {
+//     agent { label 'linux' }
+//     stages {      
+//         stage('Cleanup') {
+//             steps {
+//                 sh 'docker stop moderation moderation-test'
+//                 sh 'docker rm moderation moderation-test'
+//                 sh 'rm -r *'
+//             }
+//         }
+//         stage('Clone') {
+//             steps {
+//                 sh 'git clone https://github.com/Emmvish/Online-Shopping.git .'
+//                 sh "find . -mindepth 1  ! -regex '^./moderation\(/.*\)?' -delete"
+//             }
+//         }
+//         stage('Test') {
+//             steps {
+//                 sh 'cd moderation && docker build -f Dockerfile.dev -t emmvish/moderation-test:latest .'
+//                 sh 'docker run -d --name moderation-test emmvish/moderation-test:latest '
+//             }
+//         }
+//         stage('Deploy') {
+//             steps {
+//                 sh 'cd moderation && docker build -t emmvish/moderation:latest .'
+//                 sh 'docker run -d -p 4002:4002 --name moderation emmvish/moderation:latest'
+//             }
+//         }
+//     }
+// } 
+
+
+// JENKINS-DOCKER PLUGIN METHOD
+
+// pipeline {
+//     agent { label 'linux' }
+//     stages {      
+//         stage('Cleanup') {
+//             steps {
+//                 sh 'docker stop frontend frontend-test'
+//                 sh 'docker rm frontend frontend-test'
+//                 sh 'rm -r *'
+//             }
+//         }
+//         stage('Clone') {
+//             steps {
+//                 sh 'git clone https://github.com/Emmvish/Online-Shopping.git .'
+//                 sh "find . -mindepth 1  ! -regex '^./moderation\(/.*\)?' -delete"
+//             }
+//         }
+//         stage('Test') {
+//             agent {
+//                 dockerfile { 
+// 			           filename 'Dockerfile.dev'
+//                     dir 'moderation'
+//                     label 'linux'
+//                     args '-d --name moderation-test'
+// 		        }
+//             }
+//             steps {
+//                 sh 'node -v'
+//                 sh 'npm -v'
+//             }
+//         }
+//         stage('Deploy') {
+//             agent {
+//                 dockerfile { 
+// 			           filename 'Dockerfile'
+//                     dir 'moderation'
+//                     label 'linux'
+//                     args '-d -p 4002:4002 --name moderation'
+// 		        }
+//             }
+//             steps {
+//                 sh 'node -v'
+//                 sh 'npm -v'
+//             }
+//         }
+//     }
+// } 

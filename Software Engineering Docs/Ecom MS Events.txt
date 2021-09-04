@@ -1,0 +1,101 @@
+1. User - Research
+
+a) type: 'UserAdded', data: { id, name, address }
+b) type: 'UserEdited', data: { id, updates }
+c) type: 'UserRemoved', data: { id }
+d) type: 'UserLoggedIn', data: { id, token }
+e) type: 'UserLoggedOut', data: { id, token }
+f) type: 'AdminRemovedUser', data: { name, token }
+g) type: 'AdminAdded', data: { user, token }
+
+2. User - Moderation X
+
+3. User - Payout
+
+a) type: 'UserAdded', data: { id, name, address }
+b) type: 'UserEdited', data: { id, updates }
+c) type: 'UserRemoved', data: { id }
+d) type: 'UserLoggedIn', data: { id, token }
+e) type: 'UserLoggedOut', data: { id, token }
+f) type: 'AdminRemovedUser', data: { name, token }
+g) type: 'AdminAdded', data: { user, token }
+
+4. User - Order 
+
+a) type: 'UserAdded', data: { id, name, password, address, tokens: [] }
+b) type: 'UserEdited', data: { id, updates }
+c) type: 'UserRemoved', data: { id }
+d) type: 'UserLoggedIn', data: { id, token }
+e) type: 'UserLoggedOut', data: { id, token }
+f) type: 'AdminRemovedUser', data: { name, token }
+g) type: 'AdminAdded', data: { user, token }
+
+5. User - Product 
+
+a) type: 'UserAdded', data: { id, name, password, address, tokens: [] }
+b) type: 'UserEdited', data: { id, updates }
+c) type: 'UserRemoved', data: { id }
+d) type: 'UserLoggedIn', data: { id, token }
+e) type: 'UserLoggedOut', data: { id, token }
+f) type: 'AdminRemovedUser', data: { name, token }
+g) type: 'AdminAdded', data: { user, token }
+
+6. Research - Moderation X
+
+7. Research - Payout X
+
+8. Research - Order X
+
+9. Research - Product 
+
+a) type: 'ProductAdded', data: { id, name, image, price, seller_id, rating: 0 }
+b) type: 'ProductEdited, data: { id, updates }
+c) type: 'ProductRemoved', data: { id } 
+d) type: 'ProductRated', data: { token, product: { _id, rating } }
+
+10. Moderation - Payout X
+
+11. Moderation - Order X
+
+12. Moderation - Product
+
+a) type: 'ModerateProduct', data: { id, name, price, seller_id, rating: 0, quantity, approval: 'Pending' }
+b) type: 'ProductModerated', data: { id, name, price, seller_id, rating: 0, quantity, approval: 'Approved / Rejected' }
+
+13. Payout - Order 
+
+a) type: 'OrderEdited', data: { ID, updates: { status } }
+b) type: 'OrderCreated', data: { ID, Date, Product_ID, User_ID, Seller_ID, Quantity, Total_Value, Status: 'Pending' }
+
+14. Payout - Product X
+
+15. Order - Product
+
+a) type: 'OrderCreated', data: { ID, Date, Product_ID, User_ID, Seller_ID, Quantity, Total_Value, Status: 'Pending' }
+
+16) Cart - User
+
+a) type: 'UserAdded', data: { id, name, password, address, tokens: [] }
+b) type: 'UserEdited', data: { id, updates }
+c) type: 'UserRemoved', data: { id }
+d) type: 'UserLoggedIn', data: { id, token }
+e) type: 'UserLoggedOut', data: { id, token }
+f) type: 'AdminRemovedUser', data: { name, token }
+g) type: 'AdminAdded', data: { user, token }
+
+17) Cart - Product
+
+a) type: 'ProductAdded', data: { id, name, image, price, seller_id, rating: 0 }
+b) type: 'ProductEdited, data: { id, updates }
+c) type: 'ProductRemoved', data: { id } 
+d) type: 'ProductRated', data: { token, product: { _id, rating } }
+
+18) Cart - Moderation X
+
+19) Cart - Research X
+
+20) Cart - Payout X
+
+21) Cart - Order
+
+a) type: 'PlaceOrder', data: { user: { _id }, product }

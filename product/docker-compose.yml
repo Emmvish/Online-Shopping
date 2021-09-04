@@ -1,0 +1,12 @@
+version: '3'
+services: 
+  production-product:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "4004:4004"
+  development-product:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev

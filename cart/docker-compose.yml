@@ -1,0 +1,12 @@
+version: '3'
+services: 
+  production-cart:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "4006:4006"
+  development-cart:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev

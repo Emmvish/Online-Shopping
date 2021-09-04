@@ -1,0 +1,790 @@
+Assumption - A single user having 'admin' role already exists inside 'User' collection at every MS that needs 'User' collection.
+
+--------------------------------------------------------------------------------------------------------------------
+
+Use Cases of Online Shopping Application :
+
+I) User Microservice
+
+Port - 4003
+
+Relevant Collections - User
+
+1. Sign up as a customer / seller :
+
+a) Send : { role : 'customer / seller', name, email, password, address } to 'User Management' MS. (/users/register)
+b) Add the user into 'User' collection as per the 'User' schema.
+c) Send whole user object back to the user.
+d) Send event : { type: 'UserAdded', data: { user: user.toJSON() } } onto event bus.
+
+2. Log into a user account :
+
+a) Send : { name, password } to 'User Management' MS (/users/auth).
+b) Check whether an account having this username exists inside 'User' collection or not. If it does not exist then send an error response and exit.
+c) Hash the password of user using Bcrypt and check if the (username, password) combination supplied by user matches that of this user account or not. If the combination is invalid, generate error response and exit.
+d) Generate an authentication token for this user and push the token into this user's 'tokens' array.
+e) Send event : { type: 'UserLoggedIn', data: { name: req.body.name, token } } onto event bus.
+f) Send a response back to user with token details.
+g) Store the token in localstorage on client side.
+
+3. Sign up a new admin :
+
+a) Obtain { token, user : { name, role, address, email, password } } from localstorage of currently logged in user and send them to 'User Management' MS. (/users/registeradmin).
+b) Check whether a user with this token exists in 'User' collection or not. If not, then send an error response and exit.
+c) Check whether req.user.role is 'admin' or not. If not admin, then send an error response and exit.
+d) Obtain details of new admin from req.body.user and store them into 'User' collection as per the 'User' schema.
+e) Send event : { type: 'AdminAdded', data: { user: user.toJSON(), token: req.token } } onto event bus.
+f) Send confirmation back to the admin who sent this request.
+
+4) Remove user account : 
+
+a) Obtain { token } from localstorage of currently logged in user and send POST request to 'User Management' MS (/users/delete).
+b) Search for a user with this token inside 'User' collection. If such a user does not exist, then send an error response and exit.
+c) Otherwise, remove this user record from 'User' collection.
+d) Send event : { type: 'UserRemoved', data: { name: req.user.name, token: req.token } } onto event bus.
+e) Reply with confirmation.
+
+5) Remove user account as an admin :
+
+a) Obtain { token, user: { name } } from localstorage on client side, and send POST request to 'User Management' MS (/users/admindelete).
+b) Search 'User' collection to obtain the details of admin user using their token. If user does not exist, respond with an error message and exit.
+c) If req.user.role is not 'admin', respond with an error message and exit.
+d) Delete user having username same as req.body.user.name from 'User' collection. If user does not exist, respond with an error message and exit.
+e) Send event : { type: 'AdminRemovedUser', data: { name: req.body.user.name, token: req.token } } onto event bus.
+f) Reply with confirmation.
+
+6) Edit User account :
+
+a) Obtain token from localstorage on client side, and send : { token, updates: { name, email, address, password } } to 'User Management' MS (/users/edit).
+b) Search 'User' collection to obtain the details of admin user using their token. If user does not exist, respond with an error message and exit. 
+c) Check if update operation is valid or not. If any operation is invalid, respond with an error and exit.
+d) Apply the updates and req.user.save().
+e) If req.body.updates.password exists, then delete req.body.updates.password.
+f) Send event : { type: 'UserEdited', data: { oldName, updates: req.body.updates, token: req.token } } onto event bus.
+g) Reply with confirmation.
+
+7) Fetch my Profile :
+
+a) Obtain token from localstorage on client side, and send : { token, updates: { name, email, address, password } } to 'User Management' MS (/users/me).
+b) Search 'User' collection to obtain the details of admin user using their token. If user does not exist, respond with an error message and exit. 
+c) Send req.user as response.
+
+8) Fetch another user's profile :
+
+a) Obtain token from localstorage on client side, and send : { token, name } to 'User Management' MS (/users/person).
+b) Search 'User' collection to obtain the details of admin user using their token. If user does not exist, respond with an error message and exit.  
+c) Check that req.user.role is 'admin'. If not, respond with an error message and exit.
+d) Search 'User' collection for user having same username as req.body.name. If not found, respond with an error message and exit.
+e) Send this user's details in response.
+
+9) Forgot Password :
+
+a) Send { name } to 'User Management' MS (/users/forgotpassword).
+b) Search 'User' collection for a user with username = req.body.name. 
+c) If this user does not exist, then respond with an error message and exit.
+d) Otherwise, change user's password to some random 16 letter string.
+e) Send the user's password to user's email address.
+f) Reply with confirmatory message: { message: 'Password Changed Successfully! Check your mail for new password.' }
+
+10) Log out of user account :
+
+a) Obtain token from localstorage on client side, and send : { token, updates: { name, email, address, password } } to 'User Management' MS (/users/logout).
+b) Search 'User' collection to obtain the details of admin user using their token. If user does not exist, respond with an error message and exit.
+c) Delete req.token from req.user.tokens array.
+d) req.user.save().
+e) Send event :  { type: 'UserLoggedOut', data: { name: req.body.name, token: req.token } }
+f) Reply with confirmation.
+
+--------------------------------------------------------------------------------------------------------------------
+
+II) Product Microservice
+
+Port - 4004
+
+Relevant Collections - User, Product
+
+Product collection has a foreign key called 'seller_id' that corresponds with '_id' field inside User collection.
+
+Middleware - Auth
+
+Event Handlers : 
+
+A) UserAdded :
+
+a) Add req.body.data.user to 'User' collection using 'user' schema.
+
+B) UserLoggedIn :
+
+a) Search for a User whose username is same as req.body.data.name.
+b) Add the req.body.data.token to the user's array of tokens.
+
+C) AdminAdded :
+
+a) Search for a User whose token list contains the req.body.data.token.
+b) Proceed only if req.user.role === 'admin' and req.body.data.user.role === 'admin'.
+c) Add the req.body.data.user to 'User' collection using 'user' schema.
+
+D) UserRemoved :
+
+a) Search for the user whose token list contains the req.body.data.token.
+b) Proceed only if req.user.name is same as req.body.user.name.
+c) If req.user.role === 'seller', then, Remove all records in 'Product' collection where seller_id === user._id.
+d) req.user.remove().
+
+
+E) AdminRemovedUser :
+
+a) Search for the user whose token list contains the req.body.data.token.
+b) Proceed only if req.user.role === 'admin'.
+c) Search for the user whose username is same as req.body.data.name.
+d) If user.role === 'seller', then, Remove all records in 'Product' collection where seller_id === user._id.
+e) user.remove().
+
+F) UserEdited :
+
+a) Search for a User whose token list contains the req.body.data.token.
+b) Proceed only if req.body.data.name is same as req.user.name.
+c) Proceed only if all update operations inside req.body.data.updates object are valid.
+d) Apply the updates to req.user.
+e) req.user.save().
+
+G) UserLoggedOut :
+
+a) Search for a User whose token list contains the req.body.data.token.
+b) Delete req.body.data.token from req.user.tokens array.
+c) req.user.save().
+
+H) ProductModerated : 
+
+a) Search inside 'User' collection for req.body.data.token, if no record found, exit.
+b) Ensure that req.user.role === 'seller', else exit.
+c) Search inside 'Product' collection for req.body.data.product._id.
+d) Set product.status = req.body.data.product.status.
+e) product.save().
+f) Send event : { type: 'ProductEdited', data: { token, product: { _id: req.body.data.product._id, updates: { status: req.body.data.product.status } } } } onto event bus.
+
+I) OrderCreated :
+
+a) Search inside 'User' collection for req.body.data.token, if no record found, exit.
+b) Ensure that req.user.role === 'customer', else exit.
+c) Search inside 'Product' collection for _id = req.body.data.product.productId.
+d) Decrement product.quantity by req.body.data.product.quantity.
+e) product.save().
+f) Send event : { type: 'ProductEdited', data: { token, product: { _id: req.body.data.product.productId, updates: { quantity: product.quantity } } } } onto event bus.
+ 
+Use Cases :
+
+1) Add a Product :
+
+a) Obtain token from localstorage on client side, and send { token, product: { name, price, quantity } } as POST request to 'Product Management' microservice (/products/add).
+b) Search 'User' collection for user that has got req.header.token. If user was not found, respond with an error message and exit.
+c) Proceed only if req.user.role === 'seller'.
+d) const product = req.body.product;
+e) Set product.seller_id = req.user._id.
+f) Search 'Product' collection using product.name and product.seller_id. If the search returned any records, respond with an error message and exit.
+g) Add the product into 'Product' collection using 'product' schema.
+h) Send event : { type: 'ProductAdded', data: { token: req.token, product: { _id: product._id, name: product.name, price: product.price, quantity: product.quantity } } } onto event bus.
+i) Send event : { type: 'ModerateProduct', data: { token: req.token, ...product } } to 'Moderation' MS via event bus.
+j) Respond with 'successfully added' message.
+
+2) Remove a Product :
+
+a) Obtain token from localstorage on client side, and send { token, product: { _id } } as POST request to 'Product Management' microservice (/products/delete).
+b) Search 'User' collection for user that has got req.header.token. If user was not found, respond with an error message and exit.
+c) Find req.body.product._id in 'Product' collection as product. If product was not found, respond with an error message and exit.
+d) Proceed only if (req.user.role === 'seller' && req.user._id === product.seller_id || req.user.role === 'admin').
+e) Remove this product from 'Product' collection.
+f) Send event : { type: 'ProductRemoved', data: { token, product: { _id: req.body.product._id } } } onto event bus.
+g) Respond with 'successfully removed' message.
+
+3) Edit a Product :
+
+a) Obtain token from localstorage on client side, and send { token, product: { _id, updates: { name, price, quantity } } } as POST request to 'Product Management' microservice (/products/edit).
+b) Search 'User' collection for user that has got req.header.token. If user was not found, respond with an error message and exit.
+c) Find req.body.product._id in 'Product' collection as product. If product was not found, respond with an error message and exit.
+d) Proceed only if req.user.role === 'seller' and product.seller_id === req.user._id.
+e) Proceed only if all update operations inside req.body.product.updates are valid (name, price, quantity).
+f) Apply these updates to the product.
+g) Send event : { type: 'ModerateProduct', data: { token, ...product } } to 'Moderation' MS via event bus.
+h) product.save().
+i) Send event : { type: 'ProductEdited', data: { token, product: { _id: req.body.product._id, updates: { name, price, quantity } } } } onto event bus.
+j) Respond with 'successfully updated' message.
+
+4) View my Products :
+
+a) Obtain token from localstorage on client side, and send { token } as POST request to 'Product Management' microservice (/products).
+b) Search 'User' collection for user that has got req.header.token. If user was not found, respond with an error message and exit. 
+c) Proceed only if req.user.role === 'seller'.
+d) Search 'Product' collection for list of all products whose seller_id = req.user._id.
+e) Send this list back to the client.
+
+5) Rate a Product :
+
+a) Obtain token from localstorage on client side, and send { token, product: { _id, rating } } as POST request to 'Product Management' microservice (/products/rate).
+b) Search 'User' collection for user that has got req.header.token. If user was not found, respond with an error message and exit.
+c) Proceed only if req.user.role === 'customer'.
+d) Search in 'Product' collection for product using req.body.product._id as criterion. If product was not found, respond with an error message and exit.
+e) product.rating =  ((product.rating * product.total_ratings) + req.body.product.rating)/(product.total_ratings + 1); product.total_ratings ++;
+f) product.save();
+g) Send event : { type: 'ProductRated', data: { token, product: { _id: req.body.product._id, rating: req.body.product.rating } } } onto event bus.
+h) Respond with 'successfully rated' message.
+
+--------------------------------------------------------------------------------------------------------------------
+
+III) Moderation :
+
+Port - 4002
+
+Event Handlers :
+
+A) ModerateProduct :
+
+a) Check if req.body.data.name is a bad-word or not.
+b) If it's a bad word, then set req.body.data.status = 'rejected' else set it to 'approved'.
+c) Send event : { type: 'ProductModerated', data: { ...req.body.data } } onto event bus.
+
+--------------------------------------------------------------------------------------------------------------------
+
+IV) Research :
+
+Port - 4005
+
+Middleware - Auth
+
+Relevant Collections - User, Product
+
+Product collection has a foreign key called 'seller_id' that corresponds with '_id' field inside User collection.
+
+Event Handlers : 
+
+A) UserAdded :
+
+a) Add req.body.data.user to 'User' collection using 'user' schema.
+
+B) UserLoggedIn :
+
+a) Search for a User whose username is same as req.body.data.name.
+b) Add the req.body.data.token to the user's array of tokens.
+
+C) AdminAdded :
+
+a) Search for a User whose token list contains the req.body.data.token.
+b) Proceed only if req.user.role === 'admin' and req.body.data.user.role === 'admin'.
+c) Add the req.body.data.user to 'User' collection using 'user' schema.
+
+D) UserRemoved :
+
+a) Search for the user whose token list contains the req.body.data.token.
+b) Proceed only if req.user.name is same as req.body.user.name.
+c) If req.user.role === 'seller', then, Remove all records in 'Product' collection where seller_id === user._id.
+d) req.user.remove().
+
+E) AdminRemovedUser :
+
+a) Search for the user whose token list contains the req.body.data.token.
+b) Proceed only if req.user.role === 'admin'.
+c) Search for the user whose username is same as req.body.data.name.
+d) If user.role === 'seller', then, Remove all records in 'Product' collection where seller_id === user._id.
+e) user.remove().
+
+F) UserEdited :
+
+a) Search for a User whose token list contains the req.body.data.token.
+b) Proceed only if req.body.data.name is same as req.user.name.
+c) Proceed only if all update operations inside req.body.data.updates object are valid.
+d) Apply the updates to req.user.
+e) req.user.save().
+
+G) UserLoggedOut :
+
+a) Search for a User whose token list contains the req.body.data.token.
+b) Delete req.body.data.token from req.user.tokens array.
+c) req.user.save().
+
+H) ProductAdded :
+
+a) Search 'User' collection for user that has got req.body.data.token.
+b) Proceed only if req.user.role === 'seller'.
+c) const product = req.body.data.product;
+d) Set product.seller_id = req.user._id.
+e) Search 'Product' collection using product.name and product.seller_id. If the search returned any records, EXIT.
+f) Add the product into 'Product' collection using 'product' schema.
+
+I) ProductRemoved :
+
+a) Search 'User' collection for user that has got req.body.data.token. If user was not found, respond with an error message and exit.
+b) Find req.body.data.product._id in 'Product' collection as product. If product was not found, EXIT.
+c) Proceed only if (req.user.role === 'seller' && req.user._id === product.seller_id || req.user.role === 'admin').
+d) Remove this product from 'Product' collection.
+
+J) ProductEdited :
+
+a) Search 'User' collection for user that has got req.body.data.token. If user was not found, respond with an error message and exit.
+b) Find req.body.data.product._id in 'Product' collection as product. If product was not found, EXIT.
+c) Proceed only if req.user.role === 'seller' and product.seller_id === req.user._id.
+d) Proceed only if all update operations inside req.body.product.updates are valid (name, price, quantity, status).
+e) Apply these updates to the product.
+
+K) ProductRated :
+
+a) Search 'User' collection for user that has got req.body.data.token. If user was not found, respond with an error message and exit.
+b) Proceed only if req.user.role === 'customer'.
+c) Search in 'Product' collection for product using req.body.data.product._id as criterion. If product was not found, EXIT.
+d) product.rating =  ((product.rating * product.total_ratings) + req.body.data.product.rating)/(product.total_ratings + 1); product.total_ratings ++;
+e) product.save();
+
+Use Cases :
+
+1) Search among products and sellers :
+
+a) Obtain token from localstorage on client side, and send { token, searchTerm } as POST request to 'Research' microservice (/search).
+b) Search 'User' collection for user that has got req.header.token. If user was not found, respond with an error message and exit.
+c) Proceed only if req.user.role === 'customer' || 'admin'.
+d) Obtain list of users whose role is 'seller' and whose name matches pattern : %searchTerm% , from 'User' collection.
+e) Obtain list of products whose name matches pattern : %searchTerm% , from 'Product' collection (First $lookup into 'User' collection for seller_id = _id and name) 
+f) Remove those products from 'products' list whose status is 'rejected' or whose quantity = 0. 
+g) Send the { users, products } object as response.
+
+--------------------------------------------------------------------------------------------------------------------
+
+V) Cart
+
+Port - 4006
+
+Middleware - Auth
+
+Relevant Collections - User, Product, Cart
+
+Product collection has a foreign key called 'seller_id' that corresponds with '_id' field inside User collection.
+
+Event Handlers : 
+
+A) UserAdded :
+
+a) Add req.body.data.user to 'User' collection using 'user' schema.
+b) Create new record for this user inside 'Cart' collection. ( { userId: req.body.data.user._id, products: [] } )
+
+B) UserLoggedIn :
+
+a) Search for a User whose username is same as req.body.data.name.
+b) Add the req.body.data.token to the user's array of tokens.
+
+C) AdminAdded :
+
+a) Search for a User whose token list contains the req.body.data.token.
+b) Proceed only if req.user.role === 'admin' and req.body.data.user.role === 'admin'.
+c) Add the req.body.data.user to 'User' collection using 'user' schema.
+
+D) UserRemoved :
+
+a) Search for the user whose token list contains the req.body.data.token.
+b) Proceed only if req.user.name is same as req.body.user.name.
+c) If req.user.role ==='customer', then, look for req.user.name inside 'Cart' collection and remove their record.
+d) If req.user.role === 'seller', then, Remove all records in 'Product' collection where seller_id === user._id and remove all items from this seller in all customer's carts.
+e) req.user.remove().
+
+E) AdminRemovedUser :
+
+a) Search for the user whose token list contains the req.body.data.token.
+b) Proceed only if req.user.role === 'admin'.
+c) Search for the user whose username is same as req.body.data.name.
+d) If user.role ==='customer', then, look for req.user.name inside 'Cart' collection and remove their record.
+e) If user.role === 'seller', then, remove all records in 'Product' collection where seller_id === user._id and remove all items from this seller in all customer's carts.
+f) user.remove().
+
+F) UserEdited :
+
+a) Search for a User whose token list contains the req.body.data.token.
+b) Proceed only if req.body.data.name is same as req.user.name.
+c) Proceed only if all update operations inside req.body.data.updates object are valid.
+d) Apply the updates to req.user.
+e) req.user.save().
+
+G) UserLoggedOut :
+
+a) Search for a User whose token list contains the req.body.data.token.
+b) Delete req.body.data.token from req.user.tokens array.
+c) req.user.save().
+
+H) ProductAdded :
+
+a) Search 'User' collection for user that has got req.body.data.token.
+b) Proceed only if req.user.role === 'seller'.
+c) const product = req.body.data.product;
+d) Set product.seller_id = req.user._id.
+e) Search 'Product' collection using product.name and product.seller_id. If the search returned any records, EXIT.
+f) Add the product into 'Product' collection using 'product' schema.
+
+I) ProductRemoved :
+
+a) Search 'User' collection for user that has got req.body.data.token. If user was not found, respond with an error message and exit.
+b) Find req.body.data.product._id in 'Product' collection as product. If product was not found, EXIT.
+c) Proceed only if (req.user.role === 'seller' && req.user._id === product.seller_id || req.user.role === 'admin').
+d) Remove this product from 'Product' collection.
+e) Search inside 'Cart' collection for all records whose 'cart' array contains a product with this product._id. Remove the product from each record's 'cart' array.
+
+J) ProductEdited :
+
+a) Search 'User' collection for user that has got req.body.data.token. If user was not found, respond with an error message and exit.
+b) Find req.body.data.product._id in 'Product' collection as product. If product was not found, EXIT.
+c) Proceed only if req.user.role === 'seller' and product.seller_id === req.user._id.
+d) Proceed only if all update operations inside req.body.product.updates are valid (name, price, quantity, status).
+e) Apply these updates to the product.
+f) Search inside 'Cart' collection for all records whose 'cart' array contains a product with this product._id. Update the product in each record's 'cart' array. (Valid updates being on - price, name).
+
+K) ProductRated :
+
+a) Search 'User' collection for user that has got req.body.data.token. If user was not found, respond with an error message and exit.
+b) Proceed only if req.user.role === 'customer'.
+c) Search in 'Product' collection for product using req.body.data.product._id as criterion. If product was not found, EXIT.
+d) product.rating =  ((product.rating * product.total_ratings) + req.body.data.product.rating)/(product.total_ratings + 1); product.total_ratings ++;
+e) product.save();
+
+Use Cases :
+
+1) Add a Product :
+
+a) Obtain token from localstorage on client side, and send { token, product, quantity } as POST request to 'Cart' microservice (/cart/add OR /cart/editProductQuantity).
+b) Search 'User' collection for user that has got req.header.token. If user was not found, respond with an error message and exit.
+c) Proceed only if req.user.role === 'customer'.
+d) Proceed only if a product with req.body.product._id was found in 'Product' collection.
+e) Fetch the user's cart by searching with req.user._id inside 'Cart' relation.
+f) If carts.products.find((product)=> product.productId === req.body.product._id) returns a product, then product.quantity += req.body.quantity and GOTO h) step.
+g) Else, cart.products.push({ productId: req.body.product._id, name: req.body.product.name, quantity: req.body.quantity, price: req.body.product.price, ordered: false }).
+h) cart.save();
+i) Respond with this 'cart' object.
+
+2) Remove a Product :
+
+a) Obtain token from localstorage on client side, and send { token, product } as POST request to 'Cart' microservice (/cart/delete).
+b) Search 'User' collection for user that has got req.header.token. If user was not found, respond with an error message and exit.
+c) Proceed only if req.user.role === 'customer'.
+d) Fetch the user's cart by searching with req.user._id inside 'Cart' relation.
+e) cart.products = cart.products.filter((product) => product._id !== req.body.product._id);
+f) cart.save();
+g) Respond with this 'cart' object.
+
+3. View all Products in Cart :
+
+a) Obtain token from localstorage on client side, and send { token, product } as POST request to 'Cart' microservice (/cart/view).
+b) Search 'User' collection for user that has got req.header.token. If user was not found, respond with an error message and exit.
+c) Proceed only if req.user.role === 'customer'.
+d) Fetch the user's cart by searching with req.user._id inside 'Cart' relation.
+e) Send response with cart.products array.
+
+4. Increase Product Quantity by 1 :
+
+a) Obtain token from localstorage on client side, and send { token, product } as POST request to 'Cart' microservice (/cart/increasebyone).
+b) Search 'User' collection for user that has got req.header.token. If user was not found, respond with an error message and exit.
+c) Proceed only if req.user.role === 'customer'.
+d) Fetch the user's cart by searching with req.user._id inside 'Cart' relation.
+e) cart.products.forEach((product) => { if(product._id === req.body.product._id) { product.quantity++; } }); cart.save();
+f) Send response with cart.products array.
+
+5. Decrease Product Quantity by 1 :
+
+a) Obtain token from localstorage on client side, and send { token, product } as POST request to 'Cart' microservice (/cart/decreasebyone).
+b) Search 'User' collection for user that has got req.header.token. If user was not found, respond with an error message and exit.
+c) Proceed only if req.user.role === 'customer'.
+d) Fetch the user's cart by searching with req.user._id inside 'Cart' relation.
+e) cart.products.forEach((product) => { if(product._id === req.body.product._id) { product.quantity--; } }); cart.save();
+f) Send response with cart.products array.
+
+6) Create an Order :
+
+a) Obtain token from localstorage on client side, and send { token } as POST request to 'Cart' microservice (/cart/placeOrder).
+b) Search 'User' collection for user that has got req.header.token. If user was not found, respond with an error message and exit.
+c) Proceed only if req.user.role === 'customer'.
+d) Fetch the user's cart by searching with req.user._id inside 'Cart' relation.
+e) cart.products.foreach((product) => {	
+	Search for { _id: product.productId } in 'Product' collection, as originalProduct.
+	If no record was found, return error response for that order as : { order: product }
+	If originalProduct.quantity < product.quantity, return error response for that order as : { order: product }
+	Else:
+		Send event : { type: 'PlaceOrder', data: { product, token: req.token, originalProduct  } } onto event bus.
+		Set product.ordered = true.
+		
+}
+f) cart.products = cart.products.filter((product) => product.ordered !== true);
+g) cart.save();
+h) Respond with 'order placed' message.
+
+--------------------------------------------------------------------------------------------------------------------
+
+VI) Order
+
+Port - 4007
+
+Middleware - Auth
+
+Relevant Collections - User, Product, Order
+
+Product collection has a foreign key called 'seller_id' that corresponds with '_id' field inside User collection.
+
+Event Handlers : 
+
+A) UserAdded :
+
+a) Add req.body.data.user to 'User' collection using 'user' schema.
+
+B) UserLoggedIn :
+
+a) Search for a User whose username is same as req.body.data.name.
+b) Add the req.body.data.token to the user's array of tokens.
+
+C) AdminAdded :
+
+a) Search for a User whose token list contains the req.body.data.token.
+b) Proceed only if req.user.role === 'admin' and req.body.data.user.role === 'admin'.
+c) Add the req.body.data.user to 'User' collection using 'user' schema.
+
+D) UserRemoved :
+
+a) Search for the user whose token list contains the req.body.data.token.
+b) Proceed only if req.user.name is same as req.body.user.name.
+c) If req.user.role === 'seller', then, Remove all records in 'Product' collection where seller_id === user._id.
+d) req.user.remove().
+
+E) AdminRemovedUser :
+
+a) Search for the user whose token list contains the req.body.data.token.
+b) Proceed only if req.user.role === 'admin'.
+c) Search for the user whose username is same as req.body.data.name.
+d) If user.role === 'seller', then, Remove all records in 'Product' collection where seller_id === user._id.
+e) user.remove().
+
+F) UserEdited :
+
+a) Search for a User whose token list contains the req.body.data.token.
+b) Proceed only if req.body.data.name is same as req.user.name.
+c) Proceed only if all update operations inside req.body.data.updates object are valid.
+d) Apply the updates to req.user.
+e) req.user.save().
+
+G) UserLoggedOut :
+
+a) Search for a User whose token list contains the req.body.data.token.
+b) Delete req.body.data.token from req.user.tokens array.
+c) req.user.save().
+
+H) ProductAdded :
+
+a) Search 'User' collection for user that has got req.body.data.token.
+b) Proceed only if req.user.role === 'seller'.
+c) const product = req.body.data.product;
+d) Set product.seller_id = req.user._id.
+e) Search 'Product' collection using product.name and product.seller_id. If the search returned any records, EXIT.
+f) Add the product into 'Product' collection using 'product' schema.
+
+I) ProductRemoved :
+
+a) Search 'User' collection for user that has got req.body.data.token. If user was not found, respond with an error message and exit.
+b) Find req.body.data.product._id in 'Product' collection as product. If product was not found, EXIT.
+c) Proceed only if (req.user.role === 'seller' && req.user._id === product.seller_id || req.user.role === 'admin').
+d) Remove this product from 'Product' collection.
+
+J) ProductEdited :
+
+a) Search 'User' collection for user that has got req.body.data.token. If user was not found, respond with an error message and exit.
+b) Find req.body.data.product._id in 'Product' collection as product. If product was not found, EXIT.
+c) Proceed only if req.user.role === 'seller' and product.seller_id === req.user._id.
+d) Proceed only if all update operations inside req.body.product.updates are valid (name, price, quantity, status).
+e) Apply these updates to the product.
+
+K) ProductRated :
+
+a) Search 'User' collection for user that has got req.body.data.token. If user was not found, respond with an error message and exit.
+b) Proceed only if req.user.role === 'customer'.
+c) Search in 'Product' collection for product using req.body.data.product._id as criterion. If product was not found, EXIT.
+d) product.rating =  ((product.rating * product.total_ratings) + req.body.data.product.rating)/(product.total_ratings + 1); product.total_ratings ++;
+e) product.save();
+
+L) PlaceOrder :
+
+a) Search 'User' collection for user that has got req.body.data.token. If user was not found, EXIT.
+b) Proceed only if req.user.role === 'customer'.
+c) Proceed only if there exists a record against req.body.data.product.productId in 'Product' collection.
+d) Create an 'Order' object using 'order' schema to store it inside 'Order' collection, as follows :
+	{ date: date.now(), productId: req.body.data.product.productId, userId: req.user._id, sellerId: originalProduct.seller_id, quantity: req.body.data.product.quantity, totalValue: req.body.data.product.quantity * req.body.data.product.price, status: 'pending' }
+e) Send event : { type: 'OrderCreated', data: { product: req.body.data.product } } onto event bus.
+
+Use Cases :
+
+1) Create a direct order :
+
+a) Obtain token from localstorage on client side, and send { token, product: { productId, quantity } } as POST request to 'Order' microservice (/order).
+b) Search 'User' collection for user that has got req.header.token. If user was not found, respond with an error message and exit.
+c) Proceed only if req.user.role === 'customer'.
+d) Obtain the original product record from 'Product' collection by searching on _id = req.body.product._id . If no record exists, respond with an error message and exit.
+e) If originalProduct.quantity < req.body.product.quantity, respond with an error message and exit.
+f) Create an 'Order' object using 'order' schema to store it inside 'Order' collection, as follows :
+	{ date: date.now(), productId: req.body.productId, userId: req.user._id, sellerId: originalProduct.seller_id, quantity: req.body.product.quantity, totalValue: req.body.product.quantity * originalProduct.price, status: 'pending' }
+g) Send event : { type: 'OrderCreated', data: { token: req.token, product: req.body.data.product, order } } onto event bus.
+h) Respond with 'Successfully ordered!' message.
+
+2) Edit an order :
+
+a) Obtain token from localstorage on client side, and send { token, order: { _id, updates: { status } } } as POST request to 'Order' microservice (/order/edit).
+b) Search 'User' collection for user that has got req.header.token. If user was not found, respond with an error message and exit.
+c) Proceed only if req.user.role === 'seller'.
+d) Fetch the order from 'Order' collection by searching with _id = req.body.order._id. If order was not found, respond with an error message and exit.
+e) Proceed only if req.user._id = order.sellerId.
+f) Check the validity of fields included in req.body.order.updates object and if any field is invalid, respond with an error and exit. ('status' is the only valid field in this context)
+g) Apply the updates on 'order' object.
+h) order.save();
+i) Send event : { type: 'OrderEdited', data: { token: req.token, order: { _id, updates: { status } } } } onto event bus.
+j) Respond with confirmatory message.
+
+3) View my order history as Customer :
+
+a) Obtain token from localstorage on client side, and send { token } as POST request to 'Order' microservice (/order/all).
+b) Search 'User' collection for user that has got req.header.token. If user was not found, respond with an error message and exit.
+c) Proceed only if req.user.role === 'customer'.
+d) Search inside 'Order' collection with userId = req.user._id and sort by date.
+e) Send the 'order' list in response. 
+
+4) View my order history as Seller :
+
+a) Obtain token from localstorage on client side, and send { token } as POST request to 'Order' microservice (/order/all).
+b) Search 'User' collection for user that has got req.header.token. If user was not found, respond with an error message and exit.
+c) Proceed only if req.user.role === 'seller'.
+d) Search inside 'Order' collection with sellerId = req.user._id and sort by date.
+e) Send the 'order' list in response. 
+
+--------------------------------------------------------------------------------------------------------------------
+
+VII) Payout
+
+Port - 4008
+
+Middleware - Auth
+
+Relevant Collections - User, Product, Order
+
+Product collection has a foreign key called 'seller_id' that corresponds with '_id' field inside User collection.
+
+Event Handlers : 
+
+A) UserAdded :
+
+a) Add req.body.data.user to 'User' collection using 'user' schema.
+
+B) UserLoggedIn :
+
+a) Search for a User whose username is same as req.body.data.name.
+b) Add the req.body.data.token to the user's array of tokens.
+
+C) AdminAdded :
+
+a) Search for a User whose token list contains the req.body.data.token.
+b) Proceed only if req.user.role === 'admin' and req.body.data.user.role === 'admin'.
+c) Add the req.body.data.user to 'User' collection using 'user' schema.
+
+D) UserRemoved :
+
+a) Search for the user whose token list contains the req.body.data.token.
+b) Proceed only if req.user.name is same as req.body.user.name.
+c) If req.user.role === 'seller', then, Remove all records in 'Product' collection where seller_id === user._id.
+d) req.user.remove().
+
+E) AdminRemovedUser :
+
+a) Search for the user whose token list contains the req.body.data.token.
+b) Proceed only if req.user.role === 'admin'.
+c) Search for the user whose username is same as req.body.data.name.
+d) If user.role === 'seller', then, Remove all records in 'Product' collection where seller_id === user._id.
+e) user.remove().
+
+F) UserEdited :
+
+a) Search for a User whose token list contains the req.body.data.token.
+b) Proceed only if req.body.data.name is same as req.user.name.
+c) Proceed only if all update operations inside req.body.data.updates object are valid.
+d) Apply the updates to req.user.
+e) req.user.save().
+
+G) UserLoggedOut :
+
+a) Search for a User whose token list contains the req.body.data.token.
+b) Delete req.body.data.token from req.user.tokens array.
+c) req.user.save().
+
+H) ProductAdded :
+
+a) Search 'User' collection for user that has got req.body.data.token.
+b) Proceed only if req.user.role === 'seller'.
+c) const product = req.body.data.product;
+d) Set product.seller_id = req.user._id.
+e) Search 'Product' collection using product.name and product.seller_id. If the search returned any records, EXIT.
+f) Add the product into 'Product' collection using 'product' schema.
+
+I) ProductRemoved :
+
+a) Search 'User' collection for user that has got req.body.data.token. If user was not found, respond with an error message and exit.
+b) Find req.body.data.product._id in 'Product' collection as product. If product was not found, EXIT.
+c) Proceed only if (req.user.role === 'seller' && req.user._id === product.seller_id || req.user.role === 'admin').
+d) Remove this product from 'Product' collection.
+
+J) ProductEdited :
+
+a) Search 'User' collection for user that has got req.body.data.token. If user was not found, respond with an error message and exit.
+b) Find req.body.data.product._id in 'Product' collection as product. If product was not found, EXIT.
+c) Proceed only if req.user.role === 'seller' and product.seller_id === req.user._id.
+d) Proceed only if all update operations inside req.body.product.updates are valid (name, price, quantity, status).
+e) Apply these updates to the product.
+
+K) ProductRated :
+
+a) Search 'User' collection for user that has got req.body.data.token. If user was not found, respond with an error message and exit.
+b) Proceed only if req.user.role === 'customer'.
+c) Search in 'Product' collection for product using req.body.data.product._id as criterion. If product was not found, EXIT.
+d) product.rating =  ((product.rating * product.total_ratings) + req.body.data.product.rating)/(product.total_ratings + 1); product.total_ratings ++;
+e) product.save();
+
+L) OrderCreated :
+
+a) Search inside 'User' collection for req.body.data.token, if no record found, exit.
+b) Ensure that req.user.role === 'customer', else exit.
+c) Search inside 'Product' collection for _id = req.body.data.product.productId. Return with an error response if product was not found.
+d) Store the req.body.data.order into 'Order' collection using 'order' schema.
+
+M) OrderEdited :
+
+a) Search 'User' collection for user that has got req.header.token. If user was not found, respond with an error message and exit.
+b) Proceed only if req.user.role === 'seller'.
+c) Fetch the order from 'Order' collection by searching with _id = req.body.order._id. If order was not found, respond with an error message and exit.
+d) Proceed only if req.user._id = order.sellerId.
+e) Check the validity of fields included in req.body.order.updates object and if any field is invalid, respond with an error and exit. ('status' is the only valid field in this context)
+f) Apply the updates on 'order' object.
+g) order.save();
+
+Use Cases :
+
+1) Get Monthly Sales Amount :
+
+a) Obtain token from localstorage on client side, and send { token } as POST request to 'Order' microservice (/payout).
+b) Search 'User' collection for user that has got req.header.token. If user was not found, respond with an error message and exit.
+c) Proceed only if req.user.role === 'seller'.
+d) Write an aggregate query for summing up 'price' field of all orders inside 'Order' collection that have seller_id === req.user._id between start and end of this month.
+e) Send the { monthly_sales_amount } as response.
+
+2) Reset Monthly Sales :
+
+a) Obtain token from localstorage on client side, and send { token } as POST request to 'Order' microservice (/payout/reset).
+b) Search 'User' collection for user that has got req.header.token. If user was not found, respond with an error message and exit.
+c) Proceed only if req.user.role === 'admin'.
+d) Delete all orders inside previous month range, from 'Order' collection.
+e) Send 'Sales have been reset' as response message.
+
+------------------------------------x-----------------------x-------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
