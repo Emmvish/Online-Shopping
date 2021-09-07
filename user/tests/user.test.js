@@ -194,7 +194,17 @@ test('Should not update invalid user fields', async () => {
 test('Should log out the user', async () => {
     await request(app)
         .post('/users/logout')
-        .set('Authorization', `Bearer ${userOne.tokens[0].token}`).expect(200)
+        .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+        .send()
+        .expect(200)
     const user = await User.findById(userOneId);
     expect(user.tokens.length).toBe(0)
+})
+
+test('Should allow user to change password via /forgotpassword route', async () => {
+    const response = await request(app)
+                           .post('/users/forgotpassword')
+                           .send()
+                           .expect(201)
+    expect(response.body.message).not.toBeNull();
 })
