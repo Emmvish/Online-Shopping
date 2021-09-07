@@ -9,7 +9,7 @@ const transport = nodemailer.createTransport({
 	service: "gmail",
 	auth: {
 		user: myEmail,
-		pass: 'qscwdvefb'
+		pass: 'tabbatabba'
 	}
 });
 
@@ -90,9 +90,9 @@ router.post("/users/forgotpassword", async (req,res)=>{
             message.text = `Hi, ${user.name}, Your New Password is: ${newPassword} . - Team Manish Varma`;
             transport.sendMail(message, function(err){
                 if(err){
-                    res.send({ error: 'This service is unavailable!' });
+                    res.status(503).send({ error: 'This service is unavailable!' });
                 }
-                res.status(201).send();
+                res.status(201).send({ message });
             });
         } catch(e){
             res.status(503).send({ error: 'This Service is Unavailable!' });
