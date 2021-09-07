@@ -3,6 +3,8 @@ const app = require("../index")
 
 const { userOneId, userOne, userTwoId, userTwo, setupDatabase } = require('./fixtures/db');
 
+beforeEach(setupDatabase);
+
 test('Should Reject the Product', async () => {
     const response = await request(app).post('/events').send({ type: 'ModerateProduct', data: { token: userTwo.tokens[0].token, name: 'Ass Opener', status: 'pending'} }).expect(200);
     expect(response).toMatchObject({

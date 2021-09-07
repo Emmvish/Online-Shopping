@@ -38,7 +38,7 @@ const userThree = {
     role: 'customer',
     address: 'Delhi',
     tokens: [{
-        token: jwt.sign({ _id: userTwoId }, jwtSecret)
+        token: jwt.sign({ _id: userThreeId }, jwtSecret)
     }]
 }
 
@@ -50,7 +50,7 @@ const userFour = {
     role: 'admin',
     address: 'London',
     tokens: [{
-        token: jwt.sign({ _id: userTwoId }, jwtSecret)
+        token: jwt.sign({ _id: userFourId }, jwtSecret)
     }]
 }
 
@@ -98,6 +98,8 @@ const orderOne = {
 
 const setupDatabase = async () => {
     await User.deleteMany()
+    await Product.deleteMany()
+    await Order.deleteMany()
     await new User(userOne).save()
     await new User(userTwo).save()
     await new User(userThree).save()
