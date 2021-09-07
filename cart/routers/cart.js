@@ -5,6 +5,8 @@ const auth = require('../middleware/auth')
 const Cart = require('../models/cart')
 const Product = require('../models/product')
 
+const eventBusUrl = process.env.EVENT_BUS_URL || 'http://localhost:4001/events'
+
 const router = new express.Router()
 
 router.post('/cart/editProductQuantity', auth, async (req, res) => {
@@ -85,7 +87,7 @@ router.post('/cart/placeOrder', auth, async (req, res) => {
                 if(originalProduct.quantity < product.quantity) {
                     continue;
                 }
-                axios.post('http://localhost:4001/events', { type: 'PlaceOrder', data: { token: req.token, product } }).catch((err)=>{
+                axios.post(eventBusUrl, { type: 'PlaceOrder', data: { token: req.token, product } }).catch((err)=>{
                     console.log(err);
                 })
                 product.ordered = true;
