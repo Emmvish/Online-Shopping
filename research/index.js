@@ -8,11 +8,16 @@ const Product = require('./models/product')
 
 const app = express();
 
+const serverPort = process.env.PORT || 4005;
+
 app.use(express.json());
 
 app.use(researchRouter);
 
 async function handleEvent(type, data, res) {
+
+    const jwtSecret = process.env.JWT_SECRET || 'Some-Secret-Key'
+
     switch(type) {
 
         case 'UserAdded':
@@ -41,7 +46,7 @@ async function handleEvent(type, data, res) {
 
         case 'AdminAdded': 
             try {
-                const decoded = jwt.verify(data.token, 'Some-Secret-Key')
+                const decoded = jwt.verify(data.token, jwtSecret)
                 const adminUser = await User.findOne({ _id: decoded._id, 'tokens.token': data.token })
                 if(!adminUser) {
                     throw new Error('User Not Found!');
@@ -60,7 +65,7 @@ async function handleEvent(type, data, res) {
 
         case 'UserRemoved': 
             try {
-                const decoded = jwt.verify(data.token, 'Some-Secret-Key')
+                const decoded = jwt.verify(data.token, jwtSecret)
                 const user = await User.findOne({ _id: decoded._id, 'tokens.token': data.token })
                 if(!user) {
                     throw new Error('No such user exists!');
@@ -74,7 +79,7 @@ async function handleEvent(type, data, res) {
 
         case 'AdminRemovedUser': 
             try {
-                const decoded = jwt.verify(data.token, 'Some-Secret-Key')
+                const decoded = jwt.verify(data.token, jwtSecret)
                 const adminUser = await User.findOne({ _id: decoded._id, 'tokens.token': data.token })
                 if(!adminUser) {
                     throw new Error('Unable to remove this user as admin!');
@@ -92,7 +97,7 @@ async function handleEvent(type, data, res) {
 
         case 'UserEdited':
             try {
-                const decoded = jwt.verify(data.token, 'Some-Secret-Key')
+                const decoded = jwt.verify(data.token, jwtSecret)
                 const user = await User.findOne({ _id: decoded._id, 'tokens.token': data.token })
                 const allowedUpdates = ['name', 'email', 'address'];
                 const updates = Object.keys(data.updates);
@@ -116,7 +121,7 @@ async function handleEvent(type, data, res) {
 
         case 'UserLoggedOut':
             try {
-                const decoded = jwt.verify(data.token, 'Some-Secret-Key')
+                const decoded = jwt.verify(data.token, jwtSecret)
                 const user = await User.findOne({ _id: decoded._id, 'tokens.token': data.token })
                 user.tokens = user.tokens.filter((token) => token.token !== data.token);
                 await user.save();
@@ -128,7 +133,7 @@ async function handleEvent(type, data, res) {
 
         case 'ProductAdded': 
             try {
-                const decoded = jwt.verify(data.token, 'Some-Secret-Key')
+                const decoded = jwt.verify(data.token, jwtSecret)
                 const user = await User.findOne({ _id: decoded._id, 'tokens.token': data.token, role: 'seller' })
                 if(!user) {
                     throw new Error('User was not found!')
@@ -143,7 +148,7 @@ async function handleEvent(type, data, res) {
 
         case 'ProductRemoved': 
             try {
-                const decoded = jwt.verify(data.token, 'Some-Secret-Key')
+                const decoded = jwt.verify(data.token, jwtSecret)
                 const user = await User.findOne({ _id: decoded._id, 'tokens.token': data.token, role: 'seller' })
                 if(!user) {
                     throw new Error('User was not found!')
@@ -161,7 +166,7 @@ async function handleEvent(type, data, res) {
 
         case 'ProductEdited': 
             try {
-                const decoded = jwt.verify(data.token, 'Some-Secret-Key')
+                const decoded = jwt.verify(data.token, jwtSecret)
                 const user = await User.findOne({ _id: decoded._id, 'tokens.token': data.token, role: 'seller' })
                 if(!user) {
                     throw new Error('User was not found!')
@@ -192,7 +197,7 @@ async function handleEvent(type, data, res) {
 
         case 'ProductRated':
             try {
-                const decoded = jwt.verify(data.token, 'Some-Secret-Key')
+                const decoded = jwt.verify(data.token, jwtSecret)
                 const user = await User.findOne({ _id: decoded._id, 'tokens.token': data.token, role: 'customer' })
                 if(!user) {
                     throw new Error('User was not found!')
@@ -218,8 +223,8 @@ app.post('/events', (req, res) => {
     handleEvent(type, data, res);
 })
 
-app.listen(4005, ()=>{
-    console.log('Listening at port: 4005')
+app.listen(serverPort, ()=>{
+    console.log('Listening at port: ' + serverPort);
 })
 
 module.exports = app;

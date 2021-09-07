@@ -23,7 +23,7 @@ const userTwo = {
     name: 'Jess',
     email: 'jess@example.com',
     password: 'myhouse099@@',
-    role: 'admin',
+    role: 'seller',
     address: 'Berlin',
     tokens: [{
         token: jwt.sign({ _id: userTwoId }, jwtSecret)

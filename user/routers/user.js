@@ -4,12 +4,13 @@ const nodemailer = require("nodemailer");
 const { v4: uuidv4 } = require('uuid');
 
 const myEmail = "mvtinder98@gmail.com"
+const myEmailPassword = process.env.EMAIL_PASSWORD || '********'
 
 const transport = nodemailer.createTransport({
 	service: "gmail",
 	auth: {
 		user: myEmail,
-		pass: 'tabbatabba'
+		pass: myEmailPassword
 	}
 });
 
@@ -19,6 +20,8 @@ const message = {
 	subject: "",
 	text: ""
 };
+
+const eventBusUrl = process.env.EVENT_BUS_URL || 'http://localhost:4001/events'
 
 const User = require('../models/user')
 const auth = require('../middleware/auth')
@@ -30,11 +33,11 @@ async function registerUser (req, res, admin) {
     try {
         await user.save();
         if(!admin) {
-            axios.post('http://localhost:4001/events', { type: 'UserAdded', data: { user: user.toJSON() } }).catch((err)=>{
+            axios.post(eventBusUrl, { type: 'UserAdded', data: { user: user.toJSON() } }).catch((err)=>{
                 console.log(err);
             })
         } else {
-            axios.post('http://localhost:4001/events', { type: 'AdminAdded', data: { user: user.toJSON(), token: req.token } }).catch((err)=>{
+            axios.post(eventBusUrl, { type: 'AdminAdded', data: { user: user.toJSON(), token: req.token } }).catch((err)=>{
                 console.log(err);
             })
         }
@@ -67,7 +70,7 @@ router.post('/users/auth', async (req, res) => {
             throw new Error('User was not found!')
         }
         const token = await user.generateAuthToken()
-        axios.post('http://localhost:4001/events', { type: 'UserLoggedIn', data: { user: user.toJSON(), token } }).catch((err)=>{
+        axios.post(eventBusUrl, { type: 'UserLoggedIn', data: { user: user.toJSON(), token } }).catch((err)=>{
             console.log(err);
         })
         res.status(200).send({ user, token })
@@ -106,7 +109,7 @@ router.post('/users/logout', auth, async (req, res) => {
             return token.token !== req.token
         })
         await req.user.save()
-        axios.post('http://localhost:4001/events', { type: 'UserLoggedOut', data: { user: req.user.toJSON(), token: req.token } }).catch((err)=>{
+        axios.post(eventBusUrl, { type: 'UserLoggedOut', data: { user: req.user.toJSON(), token: req.token } }).catch((err)=>{
             console.log(err);
         })
         res.status(200).send()
@@ -143,7 +146,7 @@ async function editAccount(req, res) {
     try {
         updates.forEach((update) => req.user[update] = req.body[update])
         await req.user.save()
-        axios.post('http://localhost:4001/events', { type: 'UserEdited', data: { updates: req.body, token: req.token } }).catch((err)=>{
+        axios.post(eventBusUrl, { type: 'UserEdited', data: { updates: req.body, token: req.token } }).catch((err)=>{
             console.log(err);
         })
         res.status(201).send({ user: req.user })
@@ -165,11 +168,11 @@ async function deleteAccount (req, res, admin) {
         const userToDelete = req.user.toJSON();
         await req.user.remove();
         if(!admin) {
-            axios.post('http://localhost:4001/events', { type: 'UserRemoved', data: { user: userToDelete, token: req.token } }).catch((err)=>{
+            axios.post(eventBusUrl, { type: 'UserRemoved', data: { user: userToDelete, token: req.token } }).catch((err)=>{
                 console.log(err);
             })
         } else {
-            axios.post('http://localhost:4001/events', { type: 'AdminRemovedUser', data: { user: userToDelete, token: req.token } }).catch((err)=>{
+            axios.post(eventBusUrl, { type: 'AdminRemovedUser', data: { user: userToDelete, token: req.token } }).catch((err)=>{
                 console.log(err);
             })
         }

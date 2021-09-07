@@ -3,6 +3,8 @@ const express = require('express')
 require('./db/mongoose')
 const userRouter = require('./routers/user');
 
+const serverPort = process.env.PORT || 4003
+
 const app = express();
 
 app.use(express.json());
@@ -14,8 +16,8 @@ app.post('/events', (req, res)=>{
     res.send();
 })
 
-app.listen(4003, ()=>{
-    console.log('Listening at port: 4003')
+app.listen(serverPort, ()=>{
+    console.log('Listening at port: ' + serverPort)
 })
 
 module.exports = app;

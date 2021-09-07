@@ -5,6 +5,8 @@ const auth = require('../middleware/auth')
 const Product = require('../models/product')
 const Order = require('../models/order')
 
+const eventBusUrl = process.env.EVENT_BUS_URL || 'http://localhost:4001/events'
+
 const router = new express.Router()
 
 router.post('/order', auth, async (req, res) => {
@@ -19,7 +21,7 @@ router.post('/order', auth, async (req, res) => {
             }
             const order = new Order({ date: Date.now(), sellerId: product.sellerId, userId: req.user._id, productId: product._id, quantity: req.body.product.quantity, totalValue: req.body.product.quantity*product.price, status: 'pending' })
             await order.save();
-            axios.post('http://localhost:4001/events', { type: 'OrderCreated', data: { token: req.token, product: req.body.product, order } }).catch((err)=>{
+            axios.post(eventBusUrl, { type: 'OrderCreated', data: { token: req.token, product: req.body.product, order } }).catch((err)=>{
                     console.log(err);
             })
             res.status(201).send({ order })
@@ -41,7 +43,7 @@ router.post('/order/edit', auth, async (req, res) => {
             if(req.body.order.updates.status) {
                 order.status = req.body.order.updates.status;
                 await order.save();
-                axios.post('http://localhost:4001/events', { type: 'OrderEdited', data: { token: req.token, order: req.body.order } }).catch((err)=>{
+                axios.post(eventBusUrl, { type: 'OrderEdited', data: { token: req.token, order: req.body.order } }).catch((err)=>{
                         console.log(err);
                 })
                 res.status(201).send({ order });

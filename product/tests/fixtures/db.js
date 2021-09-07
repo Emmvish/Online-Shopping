@@ -3,6 +3,8 @@ const jwt = require('jsonwebtoken')
 const User = require('../../models/user')
 const Product = require('../../models/product')
 
+const jwtSecret = process.env.JWT_SECRET || 'Some-Secret-Key'
+
 const userOneId = new mongoose.Types.ObjectId()
 const userOne = {
     _id: userOneId,
@@ -11,7 +13,7 @@ const userOne = {
     role: 'seller',
     address: 'New York',
     tokens: [{
-        token: jwt.sign({ _id: userOneId }, process.env.JWT_SECRET)
+        token: jwt.sign({ _id: userOneId }, jwtSecret)
     }]
 }
 
@@ -23,7 +25,7 @@ const userTwo = {
     role: 'seller',
     address: 'Berlin',
     tokens: [{
-        token: jwt.sign({ _id: userTwoId }, process.env.JWT_SECRET)
+        token: jwt.sign({ _id: userTwoId }, jwtSecret)
     }]
 }
 
@@ -35,7 +37,7 @@ const userThree = {
     role: 'customer',
     address: 'Delhi',
     tokens: [{
-        token: jwt.sign({ _id: userTwoId }, process.env.JWT_SECRET)
+        token: jwt.sign({ _id: userTwoId }, jwtSecret)
     }]
 }
 

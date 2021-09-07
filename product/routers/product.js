@@ -6,16 +6,18 @@ const Product = require('../models/product')
 
 const router = new express.Router()
 
+const eventBusUrl = process.env.EVENT_BUS_URL || 'http://localhost:4001/events'
+
 router.post('/products/add', auth, async (req, res) => {
     if(req.user.role === 'seller') {
         try {
             req.body.product.sellerId = req.user._id;   
             const product = new Product(req.body.product);
             await product.save();
-            axios.post('http://localhost:4001/events', { type: 'ProductAdded', data: { token: req.token, product: { _id: product._id, name: product.name, price: product.price, quantity: product.quantity } } }).catch((err)=>{
+            axios.post(eventBusUrl, { type: 'ProductAdded', data: { token: req.token, product: { _id: product._id, name: product.name, price: product.price, quantity: product.quantity } } }).catch((err)=>{
                 console.log(err);
             })
-            axios.post('http://localhost:4001/events', { type: 'ModerateProduct', data: { token: req.token, product: { _id: product._id, name: product.name, status: 'pending' } } }).catch((err)=>{
+            axios.post(eventBusUrl, { type: 'ModerateProduct', data: { token: req.token, product: { _id: product._id, name: product.name, status: 'pending' } } }).catch((err)=>{
                 console.log(err);
             })
             res.status(201).send({ product });
@@ -35,7 +37,7 @@ router.post('/products/delete', auth, async (req, res) => {
                 throw new Error('This product does NOT exist in the database!');
             }
             await product.remove();
-            axios.post('http://localhost:4001/events', { type: 'ProductRemoved', data: { token: req.token, product: { _id: req.body.product._id } } }).catch((err)=>{
+            axios.post(eventBusUrl, { type: 'ProductRemoved', data: { token: req.token, product: { _id: req.body.product._id } } }).catch((err)=>{
                 console.log(err);
             })
             res.status(200).send({ product: { _id: req.body.product._id } });
@@ -68,11 +70,11 @@ router.post('/products/edit', auth, async (req, res) => {
             }
             updates.forEach((update) => product[update] = req.body.product[update])
             await product.save();
-            axios.post('http://localhost:4001/events', { type: 'ProductEdited', data: { token: req.token, product: { _id: req.body.product._id, updates: req.body.product.updates } } }).catch((err)=>{
+            axios.post(eventBusUrl, { type: 'ProductEdited', data: { token: req.token, product: { _id: req.body.product._id, updates: req.body.product.updates } } }).catch((err)=>{
                 console.log(err);
             })
             if(updates.includes('name')) {
-                axios.post('http://localhost:4001/events', { type: 'ModerateProduct', data: { token: req.token, product: { _id: product._id, name: product.name, status: 'pending' } } }).catch((err)=>{
+                axios.post(eventBusUrl, { type: 'ModerateProduct', data: { token: req.token, product: { _id: product._id, name: product.name, status: 'pending' } } }).catch((err)=>{
                     console.log(err);
                 })
             }
@@ -108,7 +110,7 @@ router.post('/products/rate', auth, (req, res) => {
             product.rating = ((product.totalRatings*product.rating) + req.body.product.rating)/(product.totalRatings + 1);
             product.totalRatings++;
             await product.save();
-            axios.post('http://localhost:4001/events', { type: 'ProductRated', data: { token: req.token, product: { _id: product._id, rating: product.rating } } }).catch((err)=>{
+            axios.post(eventBusUrl, { type: 'ProductRated', data: { token: req.token, product: { _id: product._id, rating: product.rating } } }).catch((err)=>{
                 console.log(err);
             })
             res.status(201).send({ product });
