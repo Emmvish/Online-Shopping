@@ -52,7 +52,7 @@ pipeline {
 //         stage('Deploy') {
 //             steps {
 //                 sh 'cd cart && docker build -t emmvish/cart:latest .'
-//                 sh 'docker run -d -p ${PORT}:4006 --name cart emmvish/cart:latest'
+//                 sh 'docker run -d --env-file=config/config.env -p ${PORT}:${PORT} -p ${MONGODB_PORT}:${MONGODB_PORT} --name cart emmvish/cart:latest'
 //             }
 //         }
 //     }
@@ -97,7 +97,7 @@ pipeline {
 // 			           filename 'Dockerfile'
 //                     dir 'cart'
 //                     label 'linux'
-//                     args '-d -p ${PORT}:4006 --name cart'
+//                     args '-d --env-file=config/config.env -p ${PORT}:${PORT} -p ${MONGODB_PORT}:${MONGODB_PORT} --name cart'
 // 		        }
 //             }
 //             steps {
