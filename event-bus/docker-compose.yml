@@ -5,4 +5,6 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "4001:4001"
+      - "${PORT}:${PORT}"
+    env_file:
+      - ./config/config.env
