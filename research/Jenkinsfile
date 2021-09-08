@@ -52,7 +52,7 @@ pipeline {
 //         stage('Deploy') {
 //             steps {
 //                 sh 'cd research && docker build -t emmvish/research:latest .'
-//                 sh 'docker run -d -p 4005:4005 --name research emmvish/research:latest'
+//                 sh 'docker run -d -p ${PORT}:4005 --name research emmvish/research:latest'
 //             }
 //         }
 //     }
@@ -66,8 +66,8 @@ pipeline {
 //     stages {      
 //         stage('Cleanup') {
 //             steps {
-//                 sh 'docker stop frontend frontend-test'
-//                 sh 'docker rm frontend frontend-test'
+//                 sh 'docker stop research research-test'
+//                 sh 'docker rm research research-test'
 //                 sh 'rm -r *'
 //             }
 //         }
@@ -97,7 +97,7 @@ pipeline {
 // 			           filename 'Dockerfile'
 //                     dir 'research'
 //                     label 'linux'
-//                     args '-d -p 4005:4005 --name research'
+//                     args '-d -p ${PORT}:4005 --name research'
 // 		        }
 //             }
 //             steps {

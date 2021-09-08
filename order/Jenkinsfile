@@ -52,7 +52,7 @@ pipeline {
 //         stage('Deploy') {
 //             steps {
 //                 sh 'cd order && docker build -t emmvish/order:latest .'
-//                 sh 'docker run -d -p 4007:4007 --name order emmvish/order:latest'
+//                 sh 'docker run -d -p ${PORT}:4007 --name order emmvish/order:latest'
 //             }
 //         }
 //     }
@@ -66,8 +66,8 @@ pipeline {
 //     stages {      
 //         stage('Cleanup') {
 //             steps {
-//                 sh 'docker stop frontend frontend-test'
-//                 sh 'docker rm frontend frontend-test'
+//                 sh 'docker stop order order-test'
+//                 sh 'docker rm order order-test'
 //                 sh 'rm -r *'
 //             }
 //         }
@@ -97,7 +97,7 @@ pipeline {
 // 			           filename 'Dockerfile'
 //                     dir 'order'
 //                     label 'linux'
-//                     args '-d -p 4007:4007 --name order'
+//                     args '-d -p ${PORT}:4007 --name order'
 // 		        }
 //             }
 //             steps {

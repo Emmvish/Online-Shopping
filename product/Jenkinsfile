@@ -52,7 +52,7 @@ pipeline {
 //         stage('Deploy') {
 //             steps {
 //                 sh 'cd product && docker build -t emmvish/product:latest .'
-//                 sh 'docker run -d -p 4004:4004 --name product emmvish/product:latest'
+//                 sh 'docker run -d -p ${PORT}:4004 --name product emmvish/product:latest'
 //             }
 //         }
 //     }
@@ -66,8 +66,8 @@ pipeline {
 //     stages {      
 //         stage('Cleanup') {
 //             steps {
-//                 sh 'docker stop frontend frontend-test'
-//                 sh 'docker rm frontend frontend-test'
+//                 sh 'docker stop product product-test'
+//                 sh 'docker rm product product-test'
 //                 sh 'rm -r *'
 //             }
 //         }
@@ -97,7 +97,7 @@ pipeline {
 // 			           filename 'Dockerfile'
 //                     dir 'product'
 //                     label 'linux'
-//                     args '-d -p 4004:4004 --name product'
+//                     args '-d -p ${PORT}:4004 --name product'
 // 		        }
 //             }
 //             steps {

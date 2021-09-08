@@ -5,7 +5,10 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "4004:4004"
+      - "${PORT}:${PORT}"
+      - "${MONGODB_PORT}:${MONGODB_PORT}"
+    env_file:
+      - ./config/config.env
   development-product:
     build:
       context: .

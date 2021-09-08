@@ -52,7 +52,7 @@ pipeline {
 //         stage('Deploy') {
 //             steps {
 //                 sh 'cd user && docker build -t emmvish/user:latest .'
-//                 sh 'docker run -d -p 4003:4003 --name user emmvish/user:latest'
+//                 sh 'docker run -d -p ${PORT}:4003 --name user emmvish/user:latest'
 //             }
 //         }
 //     }
@@ -66,8 +66,8 @@ pipeline {
 //     stages {      
 //         stage('Cleanup') {
 //             steps {
-//                 sh 'docker stop frontend frontend-test'
-//                 sh 'docker rm frontend frontend-test'
+//                 sh 'docker stop user user-test'
+//                 sh 'docker rm user user-test'
 //                 sh 'rm -r *'
 //             }
 //         }
@@ -97,7 +97,7 @@ pipeline {
 // 			           filename 'Dockerfile'
 //                     dir 'user'
 //                     label 'linux'
-//                     args '-d -p 4003:4003 --name user'
+//                     args '-d -p ${PORT}:4003 --name user'
 // 		        }
 //             }
 //             steps {
