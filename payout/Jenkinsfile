@@ -52,7 +52,7 @@ pipeline {
 //         stage('Deploy') {
 //             steps {
 //                 sh 'cd payout && docker build -t emmvish/payout:latest .'
-//                 sh 'docker run -d -p ${PORT}:4008 --name payout emmvish/payout:latest'
+//                 sh 'docker run -d --env-file=config/config.env -p ${PORT}:${PORT} -p ${MONGODB_PORT}:${MONGODB_PORT} --name payout emmvish/payout:latest'
 //             }
 //         }
 //     }
@@ -97,7 +97,7 @@ pipeline {
 // 			           filename 'Dockerfile'
 //                     dir 'payout'
 //                     label 'linux'
-//                     args '-d -p ${PORT}:4008 --name payout'
+//                     args '-d --env-file=config/config.env -p ${PORT}:${PORT} -p ${MONGODB_PORT}:${MONGODB_PORT} --name payout'
 // 		        }
 //             }
 //             steps {

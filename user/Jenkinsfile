@@ -52,7 +52,7 @@ pipeline {
 //         stage('Deploy') {
 //             steps {
 //                 sh 'cd user && docker build -t emmvish/user:latest .'
-//                 sh 'docker run -d -p ${PORT}:4003 --name user emmvish/user:latest'
+//                 sh 'docker run -d --env-file=config/config.env -p ${PORT}:${PORT} -p ${MONGODB_PORT}:${MONGODB_PORT} --name user emmvish/user:latest'
 //             }
 //         }
 //     }
@@ -97,7 +97,7 @@ pipeline {
 // 			           filename 'Dockerfile'
 //                     dir 'user'
 //                     label 'linux'
-//                     args '-d -p ${PORT}:4003 --name user'
+//                     args '-d --env-file=config/config.env -p ${PORT}:${PORT} -p ${MONGODB_PORT}:${MONGODB_PORT} --name user'
 // 		        }
 //             }
 //             steps {

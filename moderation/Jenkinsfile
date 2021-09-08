@@ -52,7 +52,7 @@ pipeline {
 //         stage('Deploy') {
 //             steps {
 //                 sh 'cd moderation && docker build -t emmvish/moderation:latest .'
-//                 sh 'docker run -d -p ${PORT}:4002 --name moderation emmvish/moderation:latest'
+//                 sh 'docker run -d --env-file=config/config.env -p ${PORT}:${PORT} -p ${MONGODB_PORT}:${MONGODB_PORT} --name moderation emmvish/moderation:latest'
 //             }
 //         }
 //     }
@@ -97,7 +97,7 @@ pipeline {
 // 			           filename 'Dockerfile'
 //                     dir 'moderation'
 //                     label 'linux'
-//                     args '-d -p ${PORT}:4002 --name moderation'
+//                     args '-d --env-file=config/config.env -p ${PORT}:${PORT} -p ${MONGODB_PORT}:${MONGODB_PORT} --name moderation'
 // 		        }
 //             }
 //             steps {

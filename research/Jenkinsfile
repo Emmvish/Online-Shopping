@@ -52,7 +52,7 @@ pipeline {
 //         stage('Deploy') {
 //             steps {
 //                 sh 'cd research && docker build -t emmvish/research:latest .'
-//                 sh 'docker run -d -p ${PORT}:4005 --name research emmvish/research:latest'
+//                 sh 'docker run -d --env-file=config/config.env -p ${PORT}:${PORT} -p ${MONGODB_PORT}:${MONGODB_PORT} --name research emmvish/research:latest'
 //             }
 //         }
 //     }
@@ -97,7 +97,7 @@ pipeline {
 // 			           filename 'Dockerfile'
 //                     dir 'research'
 //                     label 'linux'
-//                     args '-d -p ${PORT}:4005 --name research'
+//                     args '-d --env-file=config/config.env -p ${PORT}:${PORT} -p ${MONGODB_PORT}:${MONGODB_PORT} --name research'
 // 		        }
 //             }
 //             steps {
