@@ -52,7 +52,7 @@ pipeline {
 //         stage('Deploy') {
 //             steps {
 //                 sh 'cd cart && docker build -t emmvish/cart:latest .'
-//                 sh 'docker run -d -p 4006:4006 --name cart emmvish/cart:latest'
+//                 sh 'docker run -d -p ${PORT}:4006 --name cart emmvish/cart:latest'
 //             }
 //         }
 //     }
@@ -66,8 +66,8 @@ pipeline {
 //     stages {      
 //         stage('Cleanup') {
 //             steps {
-//                 sh 'docker stop frontend frontend-test'
-//                 sh 'docker rm frontend frontend-test'
+//                 sh 'docker stop cart cart-test'
+//                 sh 'docker rm cart cart-test'
 //                 sh 'rm -r *'
 //             }
 //         }
@@ -97,7 +97,7 @@ pipeline {
 // 			           filename 'Dockerfile'
 //                     dir 'cart'
 //                     label 'linux'
-//                     args '-d -p 4006:4006 --name cart'
+//                     args '-d -p ${PORT}:4006 --name cart'
 // 		        }
 //             }
 //             steps {

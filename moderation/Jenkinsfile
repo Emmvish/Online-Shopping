@@ -52,7 +52,7 @@ pipeline {
 //         stage('Deploy') {
 //             steps {
 //                 sh 'cd moderation && docker build -t emmvish/moderation:latest .'
-//                 sh 'docker run -d -p 4002:4002 --name moderation emmvish/moderation:latest'
+//                 sh 'docker run -d -p ${PORT}:4002 --name moderation emmvish/moderation:latest'
 //             }
 //         }
 //     }
@@ -66,8 +66,8 @@ pipeline {
 //     stages {      
 //         stage('Cleanup') {
 //             steps {
-//                 sh 'docker stop frontend frontend-test'
-//                 sh 'docker rm frontend frontend-test'
+//                 sh 'docker stop moderation moderation-test'
+//                 sh 'docker rm moderation moderation-test'
 //                 sh 'rm -r *'
 //             }
 //         }
@@ -97,7 +97,7 @@ pipeline {
 // 			           filename 'Dockerfile'
 //                     dir 'moderation'
 //                     label 'linux'
-//                     args '-d -p 4002:4002 --name moderation'
+//                     args '-d -p ${PORT}:4002 --name moderation'
 // 		        }
 //             }
 //             steps {
