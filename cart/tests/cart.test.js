@@ -12,9 +12,11 @@ test('Should add a product into the cart as a customer', async () => {
             quantity: 2
         }
     }).expect(201);
-    expect(response.body.cart).toMatchObject({ userId: userThreeId, products: [{productId: productOneId, quantity: 3, ordered: false}] })
+    expect(response.body.cart.products[0].productId).toBe(productOneId)
+    expect(response.body.cart.products[0].quantity).toBe(3)
     const cart = await Cart.findOne({ userId: userThreeId });
-    expect(cart).toMatchObject({ _id: cartOneId, userId: userThreeId, products: [{productId: productOneId, quantity: 3, ordered: false}] })
+    expect(cart.products[0].productId).toBe(productOneId)
+    expect(cart.products[0].quantity).toBe(3)
 })
 
 test('Should NOT add a non-existing product into the cart of customer', async () => {
@@ -44,9 +46,9 @@ test('Should remove existing product from cart, as a customer', async () => {
             quantity: -1
         }
     }).expect(201);
-    expect(response.body.cart).toMatchObject({ userId: userThreeId, products: [] })
+    expect(response.body.cart.products.length).toBe(0)
     const cart = await Cart.findOne({ userId: userThreeId });
-    expect(cart).toMatchObject({ userId: userThreeId, products: [] })
+    expect(cart.products.length).toBe(0)
 })
 
 test('Should NOT allow access to shopping cart for a non-customer', async () => {
@@ -65,9 +67,9 @@ test('Should remove existing product from cart, as a customer using delete route
             _id: productOneId
         }
     }).expect(201);
-    expect(response.body.cart).toMatchObject({ userId: userThreeId, products: [] })
+    expect(response.body.cart.products.length).toBe(0)
     const cart = await Cart.findOne({ userId: userThreeId });
-    expect(cart).toMatchObject({ userId: userThreeId, products: [] })
+    expect(cart.products.length).toBe(0)
 })
 
 test('Should NOT remove non-existing product from cart, as a customer using delete route', async () => {
@@ -78,7 +80,7 @@ test('Should NOT remove non-existing product from cart, as a customer using dele
     }).expect(404);
     expect(response.body).toMatchObject({ error: 'This product was NOT found in your cart!' })
     const cart = await Cart.findOne({ userId: userThreeId });
-    expect(cart).toMatchObject({ ...cartOne })
+    expect(cart.products.length).toBe(cartOne.products.length)
 })
 
 test('Should NOT remove existing product from cart, as a non-customer using delete route', async () => {
@@ -92,7 +94,7 @@ test('Should NOT remove existing product from cart, as a non-customer using dele
 
 test('Should fetch products in the cart of a customer', async () => {
     const response = await request(app).set('Authorization', `Bearer ${userThree.tokens[0].token}`).post('/cart').send().expect(200);
-    expect(response.body.cart).toMatchObject({ ...cartOne })
+    expect(response.body.cart.products.length).toBe(cartOne.products.length)
 })
 
 test('Should NOT fetch products if non-customer tries to view their cart', async () => {
