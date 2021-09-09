@@ -132,7 +132,7 @@ async function handleUserEvent(type, data, res) {
     }
 }
 
-app.post('/events', (req, res)=>{
+app.post('/events', async (req, res)=>{
     const { type, data } = req.body;
     if(type === 'ModerateProduct' && data.product.status === 'pending') {
         const decoded = jwt.verify(data.token, jwtSecret)
@@ -152,7 +152,7 @@ app.post('/events', (req, res)=>{
             res.status(200).send({ type: 'ProductModerated', data });
         }
     } else {
-        handleUserEvent(type, data, res);
+        await handleUserEvent(type, data, res);
     }
 })
 

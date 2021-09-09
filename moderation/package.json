@@ -14,8 +14,10 @@
     "bad-words": "^3.0.4",
     "env-cmd": "^10.1.0",
     "express": "^4.17.1",
+    "jsonwebtoken": "^8.5.1",
     "mongodb": "^4.1.0",
-    "mongoose": "^5.13.7"
+    "mongoose": "^5.13.7",
+    "validator": "^13.6.0"
   },
   "devDependencies": {
     "jest": "^27.0.6",

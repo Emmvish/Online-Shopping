@@ -82,10 +82,10 @@ router.post('/cart/placeOrder', auth, async (req, res) => {
     if(req.user.role === 'customer') {
         try {
             const cart = await Cart.findOne({ userId: req.user._id });
-            cart.products.forEach((product) => {
+            cart.products.forEach(async (product) => {
                 const originalProduct = await Product.findOne({ _id: product.productId });
                 if(originalProduct.quantity < product.quantity) {
-                    continue;
+                    return;
                 }
                 axios.post(eventBusUrl, { type: 'PlaceOrder', data: { token: req.token, product } }).catch((err)=>{
                     console.log(err);

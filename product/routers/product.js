@@ -87,7 +87,7 @@ router.post('/products/edit', auth, async (req, res) => {
     }
 })
 
-router.get('/products', auth, (req, res) => {
+router.get('/products', auth, async (req, res) => {
     if(req.user.role === 'seller') {
         try {  
             if(req.query.firstSearch) {
@@ -116,7 +116,7 @@ router.get('/products', auth, (req, res) => {
     }
 })
 
-router.post('/products/rate', auth, (req, res) => {
+router.post('/products/rate', auth, async (req, res) => {
     if(req.user.role === 'customer') {
         try {  
             const product = await Product.findOne({ _id: req.body.product._id, status: 'approved' });
