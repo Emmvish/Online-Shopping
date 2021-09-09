@@ -1,7 +1,6 @@
 # Online-Shopping (E-commerce) Application
 
-An E-commerce website with NodeJS based APIs based on microservices and MongoDB databases.
-Please check out the Software Engineering related documents of this project to understand how this project is structured using an event-driven and Microservices based architecture.
+An E-commerce website with NodeJS based APIs based on microservices and MongoDB databases. Uses Event Driven Architecture for orchestration of microservices.
 
 This application offers the following features to its users (site admins, retailers and customers) :
 1. List your product as a retailer.
