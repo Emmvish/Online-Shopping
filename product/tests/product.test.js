@@ -118,7 +118,7 @@ test('Should allow seller to view a list of their own products', async () => {
     expect(products[1]._id).toBe(productTwoId)
 })
 
-test('Should not allow non-sellers to use /products endpoint', async () => {
+test('Should NOT allow non-sellers to use /products endpoint', async () => {
     const response = await request(app).set('Authorization', `Bearer ${userThree.tokens[0].token}`).post('/products').send().expect(400);
     expect(response.body).toMatchObject({ error: 'This user is NOT a seller!' })
 })

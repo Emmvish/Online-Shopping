@@ -87,11 +87,27 @@ router.post('/products/edit', auth, async (req, res) => {
     }
 })
 
-router.post('/products', auth, (req, res) => {
+router.get('/products', auth, (req, res) => {
     if(req.user.role === 'seller') {
         try {  
-            const products = await Product.find({ sellerId: req.user._id });
-            res.status(201).send({ products });
+            if(req.query.firstSearch) {
+                const results = await Product.find({ sellerId: req.user._id })
+                                             .sort('createdAt', -1);
+                const limit = req.query.limit ? req.query.limit : 10;
+                const products = [];
+                for( let i = 0; i < limit; i++ ) {
+                    products.push(results[i]);
+                }
+                res.status(201).send({ products, totalResults: results.length });
+            } else {
+                const offset = (req.query.pageNo - 1)*req.query.limit;
+                const limit = req.query.limit ? req.query.limit : 10;
+                const products = await Product.find({ sellerId: req.user._id })
+                                              .sort('createdAt', -1)
+                                              .skip(offset)
+                                              .limit(limit);
+                res.status(201).send({ products });
+            }
         } catch(e) {
             res.status(503).send({ error: 'Unable to fetch the products right now!' })
         }
