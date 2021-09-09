@@ -13,21 +13,21 @@ router.post('/cart/editProductQuantity', auth, async (req, res) => {
     if(req.user.role === 'customer') {
         try {
             const product = await Product.findOne({ _id: req.body.product._id, status: 'approved' });
-            if(!product || product.quantity < req.body.product.quantity) {
+            if(!product) {
                 throw new Error('This product does NOT exist in the database!');
             }
             const cart = await Cart.findOne({ userId: req.user._id });
-            const productExistsInCart = cart.products.find((product) => product.productId === req.body.product._id );
+            const productExistsInCart = cart.products.find((product) => product.productId.toString() === req.body.product._id.toString() );
             if(productExistsInCart) {
                 const newQuantity = productExistsInCart.quantity + req.body.product.quantity;
                 if(product.quantity < newQuantity) {
                     throw new Error('Sufficient quantity of this product is NOT available to meet your order!');
                 }
                 if(newQuantity < 1) {
-                    cart.products = cart.products.filter((product) => product.productId !== req.body.product._id )
+                    cart.products = cart.products.filter((product) => product.productId.toString() !== req.body.product._id.toString() )
                 } else {
                     cart.products.forEach((product) => {
-                        if(product.productId === req.body.product._id) {
+                        if(product.productId.toString() === req.body.product._id.toString()) {
                             product.quantity = product.quantity + req.body.product.quantity;
                         }
                     })
@@ -49,9 +49,9 @@ router.post('/cart/delete', auth, async (req, res) => {
     if(req.user.role === 'customer') {
         try {
             const cart = await Cart.findOne({ userId: req.user._id });
-            const product = cart.products.find((product) => product.productId === req.body.product._id)
+            const product = cart.products.find((product) => product.productId.toString() === req.body.product._id.toString())
             if(product) {
-                cart.products = cart.products.filter((product) => product.productId !== req.body.product._id )
+                cart.products = cart.products.filter((product) => product.productId.toString() !== req.body.product._id.toString() )
                 await cart.save();
                 res.status(201).send({ cart })
             } else {
@@ -82,16 +82,19 @@ router.post('/cart/placeOrder', auth, async (req, res) => {
     if(req.user.role === 'customer') {
         try {
             const cart = await Cart.findOne({ userId: req.user._id });
-            cart.products.forEach(async (product) => {
+            for( let i = 0; i < cart.products.length; i++ ) {
+                const product = cart.products[i];
                 const originalProduct = await Product.findOne({ _id: product.productId });
                 if(originalProduct.quantity < product.quantity) {
-                    return;
+                    continue;
                 }
-                axios.post(eventBusUrl, { type: 'PlaceOrder', data: { token: req.token, product } }).catch((err)=>{
+                try {
+                    await axios.post(eventBusUrl, { type: 'PlaceOrder', data: { token: req.token, product } })
+                    product.ordered = true;
+                } catch(err) {
                     console.log(err);
-                })
-                product.ordered = true;
-            })
+                }
+            }
             cart.products = cart.products.filter((product) => product.ordered !== true)
             await cart.save();
             if(cart.products.length > 0) {

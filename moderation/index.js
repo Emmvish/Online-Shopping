@@ -135,6 +135,10 @@ async function handleUserEvent(type, data, res) {
 app.post('/events', async (req, res)=>{
     const { type, data } = req.body;
     if(type === 'ModerateProduct' && data.product.status === 'pending') {
+        if(!data.token) {
+            res.status(401).send({ error: 'Token was not received!' });
+            return;
+        }
         const decoded = jwt.verify(data.token, jwtSecret)
         const user = await User.findOne({ _id: decoded._id, 'tokens.token': data.token, role: 'seller' })
         if(!user) {

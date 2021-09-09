@@ -44,7 +44,7 @@ const userThree = {
 
 const userFourId = new mongoose.Types.ObjectId()
 const userFour = {
-    _id: userThreeId,
+    _id: userFourId,
     name: 'SJ',
     email: 'sjish@example.com',
     role: 'customer',

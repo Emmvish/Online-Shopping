@@ -20,6 +20,7 @@ const payoutServiceUrl = process.env.PAYOUT_SERVICE_URL || 'http://localhost:400
 app.post('/events', (req, res)=>{
     const event = req.body;
     events.push(event);
+    console.log('Event Received: ' + event.type)
     axios.post(moderationServiceUrl, event).catch((err)=>{
         console.log(err)
     })
