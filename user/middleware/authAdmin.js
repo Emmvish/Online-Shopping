@@ -3,6 +3,9 @@ const User = require('../models/user')
 
 const authAdmin = async (req, res, next) => {
     try {
+        if(!req.header('Authorization')) {
+            throw new Error('Please supply an authentication token!')
+        }
         const token = req.header('Authorization').replace('Bearer ', '')
         const jwtSecret = process.env.JWT_SECRET || 'Some-Secret-Key'
         const decoded = jwt.verify(token, jwtSecret)

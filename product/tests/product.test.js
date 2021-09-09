@@ -6,7 +6,7 @@ const { userOne, userTwoId, userTwo, userThree, userThreeId, productOne, product
 beforeEach(setupDatabase)
 
 test('Should add a new product for the seller', async () => {
-    const response = await request(app).set('Authorization', `Bearer ${userTwo.tokens[0].token}`).post('/products/add').send({
+    const response = await request(app).post('/products/add').set('Authorization', `Bearer ${userTwo.tokens[0].token}`).send({
         product: {
             name: 'Peta Jar',
             price: 500,
@@ -14,11 +14,11 @@ test('Should add a new product for the seller', async () => {
         }
     }).expect(201);
     const product = await Product.findOne({ sellerId: userTwoId, name: 'Peta Jar' })
-    expect(response.body).toMatchObject({ product: { _id: product._id, name: 'Peta Jar', price: 500, quantity: 10, status: 'pending', rating: 0, sellerId: userTwoId, totalRatings: 0 } })
+    expect(product).not.toBeNull();
 })
 
 test('Should NOT add a new product for a non-seller', async () => {
-    const response = await request(app).set('Authorization', `Bearer ${userThree.tokens[0].token}`).post('/products/add').send({
+    const response = await request(app).post('/products/add').set('Authorization', `Bearer ${userThree.tokens[0].token}`).send({
         product: {
             name: 'Peta Jar',
             price: 500,
@@ -31,17 +31,17 @@ test('Should NOT add a new product for a non-seller', async () => {
 })
 
 test('Should delete existing product that was put on sale by a seller', async () => {
-    await request(app).set('Authorization', `Bearer ${userOne.tokens[0].token}`).post('/products/delete').send({
+    await request(app).post('/products/delete').set('Authorization', `Bearer ${userOne.tokens[0].token}`).send({
         product: {
             _id: productThreeId
         }
-    }).expect(201);
+    }).expect(200);
     const product = await Product.findOne({ _id: productThreeId })
     expect(product).toBeNull();
 })
 
 test('Should not allow one seller to delete product of another seller', async () => {
-    const response = await request(app).set('Authorization', `Bearer ${userOne.tokens[0].token}`).post('/products/delete').send({
+    const response = await request(app).post('/products/delete').set('Authorization', `Bearer ${userOne.tokens[0].token}`).send({
         product: {
             _id: productTwoId
         }
@@ -52,7 +52,7 @@ test('Should not allow one seller to delete product of another seller', async ()
 })
 
 test('Should not allow a non-seller to delete any products', async () => {
-    const response = await request(app).set('Authorization', `Bearer ${userThree.tokens[0].token}`).post('/products/delete').send({
+    const response = await request(app).post('/products/delete').set('Authorization', `Bearer ${userThree.tokens[0].token}`).send({
         product: {
             _id: productOneId
         }
@@ -63,7 +63,7 @@ test('Should not allow a non-seller to delete any products', async () => {
 })
 
 test('Should not allow a non-seller edit a product', async () => {
-    const response = await request(app).set('Authorization', `Bearer ${userThree.tokens[0].token}`).post('/products/edit').send({
+    const response = await request(app).post('/products/edit').set('Authorization', `Bearer ${userThree.tokens[0].token}`).send({
         product: {
             _id: productOneId,
             updates: { name: 'test' }
@@ -75,19 +75,19 @@ test('Should not allow a non-seller edit a product', async () => {
 })
 
 test('Should not allow one seller to edit a product of another seller', async () => {
-    const response = await request(app).set('Authorization', `Bearer ${userOne.tokens[0].token}`).post('/products/edit').send({
+    const response = await request(app).post('/products/edit').set('Authorization', `Bearer ${userOne.tokens[0].token}`).send({
         product: {
             _id: productTwoId,
             updates: { name: 'test' }
         }
     }).expect(404);
     const product = await Product.findOne({ _id: productTwoId })
-    expect(product).toBe(productTwo.name)
+    expect(product.name).toBe(productTwo.name)
     expect(response.body).toMatchObject({ error: 'This product does NOT exist in the database!' })
 })
 
 test('Should not edit an invalid field for any product, as a seller', async () => {
-    const response = await request(app).set('Authorization', `Bearer ${userTwo.tokens[0].token}`).post('/products/edit').send({
+    const response = await request(app).post('/products/edit').set('Authorization', `Bearer ${userTwo.tokens[0].token}`).send({
         product: {
             _id: productTwoId,
             updates: { rating: 4.5 }
@@ -99,42 +99,46 @@ test('Should not edit an invalid field for any product, as a seller', async () =
 })
 
 test('Should allow seller to edit valid fields of their products', async () => {
-    const response = await request(app).set('Authorization', `Bearer ${userOne.tokens[0].token}`).post('/products/edit').send({
+    const response = await request(app).post('/products/edit').set('Authorization', `Bearer ${userOne.tokens[0].token}`).send({
         product: {
             _id: productThreeId,
             updates: { name: 'test' }
         }
-    }).expect(200);
+    }).expect(200)
     const product = await Product.findOne({ _id: productThreeId })
     expect(product.name).toBe('test');
-    expect(response.body).toMatchObject({ product: { _id: productThreeId } })
 })
 
-test('Should allow seller to view a list of their own products', async () => {
-    const response = await request(app).set('Authorization', `Bearer ${userTwo.tokens[0].token}`).post('/products').send().expect(201);
-    const { products } = response.body;
+test('Should allow seller to view first page of their own products', async () => {
+    const response = await request(app).get('/products').set('Authorization', `Bearer ${userTwo.tokens[0].token}`).query({ firstSearch: true }).expect(201);
+    const { products, totalResults } = response.body;
     expect(products.length).toBe(2);
-    expect(products[0]._id).toBe(productOneId)
-    expect(products[1]._id).toBe(productTwoId)
+    expect(totalResults).toBe(2);
+})
+
+test('Should allow seller to view second page of their own products', async () => {
+    const response = await request(app).get('/products').set('Authorization', `Bearer ${userTwo.tokens[0].token}`).query({ firstSearch: false, pageNo: 2, limit: 1 }).expect(201);
+    const { products } = response.body;
+    expect(products.length).toBe(1);
 })
 
 test('Should NOT allow non-sellers to use /products endpoint', async () => {
-    const response = await request(app).set('Authorization', `Bearer ${userThree.tokens[0].token}`).post('/products').send().expect(400);
+    const response = await request(app).get('/products').set('Authorization', `Bearer ${userThree.tokens[0].token}`).query({ firstSearch: true }).expect(400);
     expect(response.body).toMatchObject({ error: 'This user is NOT a seller!' })
 })
 
 test('Should allow customer to rate a product', async () => {
-    const response = await request(app).set('Authorization', `Bearer ${userThree.tokens[0].token}`).post('/products/rate').send({
+    const response = await request(app).post('/products/rate').set('Authorization', `Bearer ${userThree.tokens[0].token}`).send({
         product: {
             _id: productOneId,
             rating: 4
         }
     }).expect(201);
-    expect(response.body.product).toMatchObject({ ...productOne, rating: 4, totalRatings: 1, status: 'approved' })
+    expect(response.body.product.rating).toBe(4)
 })
 
 test('Should NOT allow seller to rate a product', async () => {
-    const response = await request(app).set('Authorization', `Bearer ${userOne.tokens[0].token}`).post('/products/rate').send({
+    const response = await request(app).post('/products/rate').set('Authorization', `Bearer ${userOne.tokens[0].token}`).send({
         product: {
             _id: productOneId,
             rating: 4
@@ -144,7 +148,7 @@ test('Should NOT allow seller to rate a product', async () => {
 })
 
 test('Should NOT allow customer to rate a rejected product', async () => {
-    const response = await request(app).set('Authorization', `Bearer ${userOne.tokens[0].token}`).post('/products/rate').send({
+    const response = await request(app).post('/products/rate').set('Authorization', `Bearer ${userThree.tokens[0].token}`).send({
         product: {
             _id: productTwoId,
             rating: 4

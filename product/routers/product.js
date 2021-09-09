@@ -61,14 +61,14 @@ router.post('/products/edit', auth, async (req, res) => {
             const isValidOperation = updates.every((update) => allowedUpdates.includes(update))
             const isValidUpdateValue = true;
             allowedUpdates.forEach((field)=>{
-                if(data.updates[field] === '') {
+                if(updates[field] === '') {
                     isValidUpdateValue = false;
                 }
             })
             if (!isValidOperation || !isValidUpdateValue) {
                 throw new Error('Invalid updates!');
             }
-            updates.forEach((update) => product[update] = req.body.product[update])
+            updates.forEach((update) => product[update] = req.body.product.updates[update])
             await product.save();
             axios.post(eventBusUrl, { type: 'ProductEdited', data: { token: req.token, product: { _id: req.body.product._id, updates: req.body.product.updates } } }).catch((err)=>{
                 console.log(err);
@@ -90,25 +90,28 @@ router.post('/products/edit', auth, async (req, res) => {
 router.get('/products', auth, async (req, res) => {
     if(req.user.role === 'seller') {
         try {  
-            if(req.query.firstSearch) {
+            if(req.query.firstSearch === 'true') {
                 const results = await Product.find({ sellerId: req.user._id })
-                                             .sort('createdAt', -1);
-                const limit = req.query.limit ? req.query.limit : 10;
+                                             .sort({ createdAt: -1 });
+                const limit = req.query.limit ? parseInt(req.query.limit) : 10;
                 const products = [];
                 for( let i = 0; i < limit; i++ ) {
-                    products.push(results[i]);
+                    if(results[i]){
+                        products.push(results[i]);
+                    }
                 }
                 res.status(201).send({ products, totalResults: results.length });
             } else {
                 const offset = (req.query.pageNo - 1)*req.query.limit;
-                const limit = req.query.limit ? req.query.limit : 10;
+                const limit = req.query.limit ? parseInt(req.query.limit) : 10;
                 const products = await Product.find({ sellerId: req.user._id })
-                                              .sort('createdAt', -1)
+                                              .sort({ createdAt: -1 })
                                               .skip(offset)
                                               .limit(limit);
                 res.status(201).send({ products });
             }
         } catch(e) {
+            console.log(e.message)
             res.status(503).send({ error: 'Unable to fetch the products right now!' })
         }
     } else {

@@ -47,13 +47,15 @@ const userSchema = new mongoose.Schema({
     timestamps: true
 })
 
-userSchema.methods.toJSON = function () {
-    const user = this
-    const userObject = user.toObject()
-    delete userObject.tokens
+// userSchema.methods.toJSON = function () {
+//     const user = this
+//     const userObject = user.toObject()
+//     delete userObject.tokens
 
-    return userObject
-}
+//     return userObject
+// }
+
+// userSchema.index({ name: 'text' })
 
 const User = mongoose.model('User', userSchema)
 

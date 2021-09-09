@@ -41,7 +41,7 @@ async function registerUser (req, res, admin) {
                 console.log(err);
             })
         }
-        res.status(201).send({ user: user.toJSON() });
+        res.status(201).send({ user });
     } catch (e) {
         res.status(400).send({ error: 'This user account already exists. Please choose a different name!' })
     }
@@ -81,8 +81,9 @@ router.post('/users/auth', async (req, res) => {
 
 router.post("/users/forgotpassword", async (req,res)=>{
     const user = await User.findOne({name: req.body.name});
-    if(!user){
+    if(!user || user.role === 'admin'){
         res.send({ error: 'User was not found!' });
+        return;
     } else {
         try {
             const newPassword = uuidv4().split("-").join("");
@@ -95,8 +96,8 @@ router.post("/users/forgotpassword", async (req,res)=>{
                 if(err){
                     res.status(503).send({ error: 'This service is unavailable!' });
                 }
-                res.status(201).send({ message });
             });
+            res.status(201).send({ message });
         } catch(e){
             res.status(503).send({ error: 'This Service is Unavailable!' });
         }
