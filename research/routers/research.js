@@ -93,4 +93,52 @@ router.get('/search/products', auth, async (req, res) => {
     }
 })
 
+router.get('/search/sellerProducts', auth, async (req, res)=>{
+    if(req.user.role === 'customer') {
+        try {
+            if(req.query.firstSearch === 'true') {
+                const results = await Product.find({ sellerId: req.query.sellerId, status: 'approved', quantity: { $gt: 0 } }).sort({ createdAt: -1 });
+                const products = [];
+                const limit = req.query.limit ? parseInt(req.query.limit) : 10;
+                for( let i = 0; i < limit; i++ ) {
+                    if(results[i]) {
+                        products.push(results[i]);
+                    }
+                }
+                res.status(200).send({ products, totalResults: results.length });
+            } else {
+                const offset = (req.query.pageNo - 1)*req.query.limit;
+                const limit = req.query.limit ? parseInt(req.query.limit) : 10;
+                const products = await Product.find({ sellerId: req.query.sellerId, status: 'approved', quantity: { $gt: 0 } })
+                                              .sort({ createdAt: -1 })
+                                              .skip(offset)
+                                              .limit(limit);
+                res.status(200).send({ products });
+            }
+        } catch(e) {
+            res.status(503).send({ error: 'Unable to perform search right now!' })
+        }
+
+    } else {
+        res.status(400).send({ error: 'This user is not a customer!' })
+    }
+})
+
+router.get('/search/getSeller', auth, async (req, res)=>{
+    if(req.user.role === 'customer') {
+        try {
+            const seller = await User.findOne({ _id: req.query.sellerId, role: 'seller' });
+            if(!seller) {
+                res.status(404).send({ error: 'This user does NOT exist in our database!' })
+            } else {
+                res.status(200).send({ seller });
+            }
+        } catch(e) {
+            res.status(503).send({ error: 'Unable to perform search right now!' })
+        }
+    } else {
+        res.status(400).send({ error: 'This user is not a customer!' })
+    }
+})
+
 module.exports = router
