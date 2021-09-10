@@ -1,12 +1,12 @@
 const request = require('supertest')
 const app = require('../index')
 const Product = require('../models/product')
-const { userOne, userTwoId, userTwo, userThree, userThreeId, productOne, productOneId, productTwo, productTwoId, productThreeId, setupDatabase } = require('./fixtures/db')
+const { userOne, userTwoId, userTwo, userThree, userThreeId, userFour, productOne, productOneId, productTwo, productTwoId, productThreeId, setupDatabase } = require('./fixtures/db')
 
 beforeEach(setupDatabase)
 
 test('Should add a new product for the seller', async () => {
-    const response = await request(app).post('/products/add').set('Authorization', `Bearer ${userTwo.tokens[0].token}`).send({
+    await request(app).post('/products/add').set('Authorization', `Bearer ${userTwo.tokens[0].token}`).send({
         product: {
             name: 'Peta Jar',
             price: 500,
@@ -116,15 +116,28 @@ test('Should allow seller to view first page of their own products', async () =>
     expect(totalResults).toBe(2);
 })
 
+test('Should allow an admin to view first page of products offered by a seller', async () => {
+    const response = await request(app).get('/products').set('Authorization', `Bearer ${userFour.tokens[0].token}`).query({ sellerId: userTwoId, firstSearch: true }).expect(201);
+    const { products, totalResults } = response.body;
+    expect(products.length).toBe(2);
+    expect(totalResults).toBe(2);
+})
+
 test('Should allow seller to view second page of their own products', async () => {
     const response = await request(app).get('/products').set('Authorization', `Bearer ${userTwo.tokens[0].token}`).query({ firstSearch: false, pageNo: 2, limit: 1 }).expect(201);
     const { products } = response.body;
     expect(products.length).toBe(1);
 })
 
-test('Should NOT allow non-sellers to use /products endpoint', async () => {
+test('Should allow an admin to view second page of products offered by a seller', async () => {
+    const response = await request(app).get('/products').set('Authorization', `Bearer ${userFour.tokens[0].token}`).query({ sellerId: userTwoId,firstSearch: false, pageNo: 2, limit: 1 }).expect(201);
+    const { products } = response.body;
+    expect(products.length).toBe(1);
+})
+
+test('Should NOT allow customers to use /products endpoint', async () => {
     const response = await request(app).get('/products').set('Authorization', `Bearer ${userThree.tokens[0].token}`).query({ firstSearch: true }).expect(400);
-    expect(response.body).toMatchObject({ error: 'This user is NOT a seller!' })
+    expect(response.body).toMatchObject({ error: 'You cannot access this route as a customer!' })
 })
 
 test('Should allow customer to rate a product', async () => {

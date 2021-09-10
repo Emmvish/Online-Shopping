@@ -33,6 +33,9 @@ router.post('/cart/editProductQuantity', auth, async (req, res) => {
                     })
                 }
             } else {
+                if(cart.products.length === 10) {
+                    throw new Error('Your cart is already full, please remove or purchase an item to add this product to your cart!');
+                }
                 cart.products = cart.products.concat({ productId: req.body.product._id, quantity: req.body.product.quantity, ordered: false });
             }
             await cart.save();

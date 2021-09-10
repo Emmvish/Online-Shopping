@@ -88,10 +88,16 @@ router.post('/products/edit', auth, async (req, res) => {
 })
 
 router.get('/products', auth, async (req, res) => {
-    if(req.user.role === 'seller') {
+    if(req.user.role === 'seller' || req.user.role === 'admin') {
         try {  
+            let sellerId;
+            if(req.user.role === 'admin') {
+                sellerId = req.query.sellerId;
+            } else {
+                sellerId = req.user._id;
+            }
             if(req.query.firstSearch === 'true') {
-                const results = await Product.find({ sellerId: req.user._id })
+                const results = await Product.find({ sellerId })
                                              .sort({ createdAt: -1 });
                 const limit = req.query.limit ? parseInt(req.query.limit) : 10;
                 const products = [];
@@ -104,7 +110,7 @@ router.get('/products', auth, async (req, res) => {
             } else {
                 const offset = (req.query.pageNo - 1)*req.query.limit;
                 const limit = req.query.limit ? parseInt(req.query.limit) : 10;
-                const products = await Product.find({ sellerId: req.user._id })
+                const products = await Product.find({ sellerId })
                                               .sort({ createdAt: -1 })
                                               .skip(offset)
                                               .limit(limit);
@@ -115,7 +121,7 @@ router.get('/products', auth, async (req, res) => {
             res.status(503).send({ error: 'Unable to fetch the products right now!' })
         }
     } else {
-        res.status(400).send({ error: 'This user is NOT a seller!' })
+        res.status(400).send({ error: 'You cannot access this route as a customer!' })
     }
 })
 

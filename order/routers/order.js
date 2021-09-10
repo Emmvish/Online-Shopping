@@ -3,6 +3,7 @@ const express = require('express');
 
 const auth = require('../middleware/auth')
 const Product = require('../models/product')
+const User = require('../models/user')
 const Order = require('../models/order')
 
 const eventBusUrl = process.env.EVENT_BUS_URL || 'http://localhost:4001/events'
@@ -61,7 +62,30 @@ router.post('/order/edit', auth, async (req, res) => {
 router.post('/order/all', auth, async (req, res) => {
     if(req.user.role === 'seller') {
         try {
-            const orders = await Order.find({ sellerId: req.user._id })
+            // const orders = await Order.find({ sellerId: req.user._id })
+            const orders = await User.aggregate([{ 
+                $match: { _id: req.user._id }
+             }, 
+             {
+                $lookup: {
+                    from: 'Order',
+                    localField: "_id",
+                    foreignField: "sellerId",
+                    as: 'myOrders'
+                }
+            }, 
+            { $unwind: '$myOrders' },
+            {
+                $lookup: {
+                    from: 'Product',
+                    localField: 'productId',
+                    foreignField: '_id',
+                    as: 'myOrderedProducts'
+                }
+            },
+            { $unwind: "$myOrderedProducts" }
+            ])
+            console.log(orders);
             res.status(200).send({ orders })
         } catch(e) {
             res.status(503).send({ error: e.message })

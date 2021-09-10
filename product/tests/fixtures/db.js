@@ -41,6 +41,18 @@ const userThree = {
     }]
 }
 
+const userFourId = new mongoose.Types.ObjectId()
+const userFour = {
+    _id: userFourId,
+    name: 'Manish',
+    email: 'mvsnsss@example.com',
+    role: 'customer',
+    address: 'Delhi',
+    tokens: [{
+        token: jwt.sign({ _id: userFourId }, jwtSecret)
+    }]
+}
+
 const productOneId = new mongoose.Types.ObjectId()
 const productOne = {
     _id: productOneId,
@@ -77,6 +89,7 @@ const setupDatabase = async () => {
     await new User(userOne).save()
     await new User(userTwo).save()
     await new User(userThree).save()
+    await new User(userFour).save()
     await new Product(productOne).save()
     await new Product(productTwo).save()
     await new Product(productThree).save()
@@ -89,6 +102,7 @@ module.exports = {
     userTwo,
     userThreeId,
     userThree,
+    userFour,
     productOneId,
     productOne,
     productTwoId,
