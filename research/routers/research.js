@@ -116,6 +116,7 @@ router.get('/search/sellerProducts', auth, async (req, res)=>{
                 res.status(200).send({ products });
             }
         } catch(e) {
+            console.log(e.message);
             res.status(503).send({ error: 'Unable to perform search right now!' })
         }
 

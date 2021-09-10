@@ -153,7 +153,7 @@ test('Should fetch the total number of search results when searching as a custom
 
 test('Should obtain the first page of list of all products offered by a seller, for a customer; while excluding rejected products.', async () => {
     const response = await request(app).get('/search/sellerProducts').set('Authorization', `Bearer ${userThree.tokens[0].token}`).query({
-        sellerId: userTwoId,
+        sellerId: userTwoId.toString(),
         firstSearch: true,
         limit: 1
     }).expect(200);
@@ -164,7 +164,7 @@ test('Should obtain the first page of list of all products offered by a seller, 
 
 test('Should NOT allow non-customers to use /sellerProducts route.', async () => {
     const response = await request(app).get('/search/sellerProducts').set('Authorization', `Bearer ${userFour.tokens[0].token}`).query({
-        sellerId: userTwoId,
+        sellerId: userTwoId.toString(),
         firstSearch: true,
         limit: 1
     }).expect(400);
@@ -172,22 +172,22 @@ test('Should NOT allow non-customers to use /sellerProducts route.', async () =>
 })
 
 test('Should fetch profile of a seller for the customer.', async () => {
-    const response = await request(app).get('/search/sellerProducts').set('Authorization', `Bearer ${userThree.tokens[0].token}`).query({
-        sellerId: userTwoId
+    const response = await request(app).get('/search/getSeller').set('Authorization', `Bearer ${userThree.tokens[0].token}`).query({
+        sellerId: userTwoId.toString()
     }).expect(200);
     expect(response.body.seller._id.toString()).toBe(userTwoId.toString());
 })
 
 test('Should NOT fetch profile of a non-seller for customer via this route.', async () => {
-    const response = await request(app).get('/search/sellerProducts').set('Authorization', `Bearer ${userThree.tokens[0].token}`).query({
-        sellerId: userFourId
+    const response = await request(app).get('/search/getSeller').set('Authorization', `Bearer ${userThree.tokens[0].token}`).query({
+        sellerId: userFourId.toString()
     }).expect(404);
     expect(response.body.error).toBe('This user does NOT exist in our database!')
 })
 
 test('Should NOT fetch a profile for a non-customer via this route.', async () => {
     const response = await request(app).get('/search/sellerProducts').set('Authorization', `Bearer ${userFour.tokens[0].token}`).query({
-        sellerId: userTwoId
+        sellerId: userTwoId.toString()
     }).expect(400);
     expect(response.body.error).toBe('This user is not a customer!');
 })

@@ -117,7 +117,7 @@ test('Should allow seller to view first page of their own products', async () =>
 })
 
 test('Should allow an admin to view first page of products offered by a seller', async () => {
-    const response = await request(app).get('/products').set('Authorization', `Bearer ${userFour.tokens[0].token}`).query({ sellerId: userTwoId, firstSearch: true }).expect(201);
+    const response = await request(app).get('/products').set('Authorization', `Bearer ${userFour.tokens[0].token}`).query({ sellerId: userTwoId.toString(), firstSearch: true }).expect(201);
     const { products, totalResults } = response.body;
     expect(products.length).toBe(2);
     expect(totalResults).toBe(2);
@@ -130,7 +130,7 @@ test('Should allow seller to view second page of their own products', async () =
 })
 
 test('Should allow an admin to view second page of products offered by a seller', async () => {
-    const response = await request(app).get('/products').set('Authorization', `Bearer ${userFour.tokens[0].token}`).query({ sellerId: userTwoId,firstSearch: false, pageNo: 2, limit: 1 }).expect(201);
+    const response = await request(app).get('/products').set('Authorization', `Bearer ${userFour.tokens[0].token}`).query({ sellerId: userTwoId.toString(),firstSearch: false, pageNo: 2, limit: 1 }).expect(201);
     const { products } = response.body;
     expect(products.length).toBe(1);
 })

@@ -117,7 +117,6 @@ router.get('/products', auth, async (req, res) => {
                 res.status(201).send({ products });
             }
         } catch(e) {
-            console.log(e.message)
             res.status(503).send({ error: 'Unable to fetch the products right now!' })
         }
     } else {

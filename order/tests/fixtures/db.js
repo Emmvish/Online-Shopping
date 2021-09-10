@@ -92,8 +92,19 @@ const orderOne = {
     quantity: 5,
     userId: userThreeId,
     date: Date.now(),
-    status: 'shipped',
+    status: 'cancelled',
     totalValue: 175
+}
+const orderTwoId = new mongoose.Types.ObjectId()
+const orderTwo = {
+    _id: orderTwoId,
+    productId: productOneId,
+    sellerId: userTwoId,
+    quantity: 3,
+    userId: userThreeId,
+    date: Date.now(),
+    status: 'pending',
+    totalValue: 150
 }
 
 const setupDatabase = async () => {
@@ -108,6 +119,7 @@ const setupDatabase = async () => {
     await new Product(productTwo).save()
     await new Product(productThree).save()
     await new Order(orderOne).save()
+    await new Order(orderTwo).save()
 }
 
 module.exports = {
@@ -126,5 +138,7 @@ module.exports = {
     productThree,
     orderOneId,
     orderOne,
+    orderTwoId,
+    orderTwo,
     setupDatabase
 }

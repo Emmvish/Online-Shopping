@@ -44,10 +44,10 @@ const userThree = {
 const userFourId = new mongoose.Types.ObjectId()
 const userFour = {
     _id: userFourId,
-    name: 'Manish',
-    email: 'mvsnsss@example.com',
-    role: 'customer',
-    address: 'Delhi',
+    name: 'Test',
+    email: 'test@example.com',
+    role: 'admin',
+    address: 'Paris',
     tokens: [{
         token: jwt.sign({ _id: userFourId }, jwtSecret)
     }]

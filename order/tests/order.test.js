@@ -87,17 +87,37 @@ test('Should NOT allow a seller to update any property other than status of thei
     expect(response.body).toMatchObject({ error: 'Invalid updates!' })
 })
 
-test('Should allow a customer to fetch all of their orders', async () => {
-    const response = await request(app).post('/order/all').set('Authorization', `Bearer ${userThree.tokens[0].token}`).send().expect(200);
-    expect(response.body.orders.length).toBe(1);
+test('Should allow a customer to fetch first page of their orders', async () => {
+    const response = await request(app).get('/order/all').set('Authorization', `Bearer ${userThree.tokens[0].token}`).query({ firstSearch: true }).expect(200);
+    expect(response.body.orders.length).toBe(2);
+    expect(response.body.orders[1].sellerName).toBe('Mike');
+    expect(response.body.orders[0].sellerName).toBe('Hamilton');
 })
 
-test('Should allow a seller to fetch all of their orders', async () => {
-    const response = await request(app).post('/order/all').set('Authorization', `Bearer ${userOne.tokens[0].token}`).send().expect(200);
-    // expect(response.body.orders.length).toBe(1);
+test('Should allow a seller to fetch first page of their orders', async () => {
+    const response = await request(app).get('/order/all').set('Authorization', `Bearer ${userOne.tokens[0].token}`).query({ firstSearch: true }).expect(200);
+    expect(response.body.orders.length).toBe(1);
+    expect(response.body.orders[0].customerName).toBe('Manish')
+})
+
+test('Should allow a user to fetch first page of their cancelled orders', async () => {
+    const response = await request(app).get('/order/all').set('Authorization', `Bearer ${userOne.tokens[0].token}`).query({ firstSearch: true, status: 'cancelled' }).expect(200);
+    expect(response.body.orders.length).toBe(1);
+    expect(response.body.orders[0].productName).toBe('Spoon')
+})
+
+test('Should allow a user to fetch first page of their pending orders', async () => {
+    const response = await request(app).get('/order/all').set('Authorization', `Bearer ${userTwo.tokens[0].token}`).query({ firstSearch: true, status: 'pending' }).expect(200);
+    expect(response.body.orders.length).toBe(1);
+    expect(response.body.orders[0].productName).toBe('Milton Jar')
+})
+
+test('Should NOT fetch an order if its status is found to be invalid', async () => {
+    const response = await request(app).get('/order/all').set('Authorization', `Bearer ${userTwo.tokens[0].token}`).query({ firstSearch: true, status: 'abc' }).expect(503);
+    expect(response.body.error).toBe('Invalid Order Status!')
 })
 
 test('Should NOT allow an admin to fetch orders', async () => {
-    const response = await request(app).post('/order/all').set('Authorization', `Bearer ${userFour.tokens[0].token}`).send().expect(400);
+    const response = await request(app).get('/order/all').set('Authorization', `Bearer ${userFour.tokens[0].token}`).query({ firstSearch: true }).expect(400);
     expect(response.body).toMatchObject({ error: 'This user is neither a seller nor a customer!' })
 })
