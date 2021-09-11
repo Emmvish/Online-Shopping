@@ -178,6 +178,28 @@ async function handleEvent(type, data, res) {
             }
             break;
 
+        case 'OrderCancelled':
+            try {
+                const decoded = jwt.verify(data.token, jwtSecret)
+                const user = await User.findOne({ _id: decoded._id, 'tokens.token': data.token, role: 'customer' })
+                if(!user) {
+                    throw new Error('User who placed this order could not be found!');
+                }
+                const product = await Product.findOne({ _id: data.product.productId });
+                if(!product) {
+                    throw new Error('This product does NOT exist in database!');
+                }
+                product.quantity = product.quantity + data.product.updates.quantity;
+                await product.save();
+                axios.post(eventBusUrl, { type: 'ProductEdited', data: { token: data.token, product: { _id: product._id, updates: { quantity: product.quantity } } } }).catch((err)=>{
+                    console.log(err);
+                })
+                res.send();
+            } catch(e) {
+                res.send({ error: e.message });
+            }
+            break;
+
     }
 }
 

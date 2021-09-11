@@ -82,6 +82,22 @@ router.post('/products/edit', auth, async (req, res) => {
         } catch(e) {
             res.status(404).send({ error: e.message })
         }
+    } else if (req.user.role === 'admin') {
+        try {  
+            const product = await Product.findOne({ _id: req.body.product._id });
+            if(!product) {
+                throw new Error('This product does NOT exist in the database!');
+            }
+            if(req.body.product.updates.status && req.body.product.updates.status === 'rejected') {
+                product.status = req.body.product.updates.status;
+                await product.save();
+                res.status(200).send({ message: 'This product has now been rejected!' });
+            } else {
+                throw new Error('Invalid updates!');
+            }
+        } catch(e) {
+            res.status(404).send({ error: e.message })
+        }
     } else {
         res.status(400).send({ error: 'This user is NOT a seller!' })
     }

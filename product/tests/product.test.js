@@ -109,6 +109,30 @@ test('Should allow seller to edit valid fields of their products', async () => {
     expect(product.name).toBe('test');
 })
 
+test('Should allow an admin to reject a product by editing its status', async () => {
+    const response = await request(app).post('/products/edit').set('Authorization', `Bearer ${userFour.tokens[0].token}`).send({
+        product: {
+            _id: productThreeId,
+            updates: { status: 'rejected' }
+        }
+    }).expect(200)
+    expect(response.body).toMatchObject({ message: 'This product has now been rejected!' })
+    const product = await Product.findOne({ _id: productThreeId })
+    expect(product.status).toBe('rejected');
+})
+
+test('Should NOT allow an admin to edit any field of a product other than its status', async () => {
+    const response = await request(app).post('/products/edit').set('Authorization', `Bearer ${userFour.tokens[0].token}`).send({
+        product: {
+            _id: productThreeId,
+            updates: { name: 'xyz' }
+        }
+    }).expect(404)
+    expect(response.body.error).toBe('Invalid updates!')
+    const product = await Product.findOne({ _id: productThreeId })
+    expect(product.name).toBe('Spoon');
+})
+
 test('Should allow seller to view first page of their own products', async () => {
     const response = await request(app).get('/products').set('Authorization', `Bearer ${userTwo.tokens[0].token}`).query({ firstSearch: true }).expect(201);
     const { products, totalResults } = response.body;
