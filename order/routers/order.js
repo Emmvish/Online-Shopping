@@ -51,7 +51,7 @@ router.post('/order/edit', auth, async (req, res) => {
                     const product = await Product.findOne({ _id: order.productId })
                     product.quantity += order.quantity;
                     await product.save();
-                    axios.post(eventBusUrl, { type: 'ProductEdited', data: { token: req.token, product: { _id: product._id, updates: { quantity: product.quantity } } } }).catch((err)=>{
+                    axios.post(eventBusUrl, { type: 'OrderCancelled', data: { token: req.token, product: { productId: product._id, updates: { quantity: product.quantity } } } }).catch((err)=>{
                         console.log(err);
                     })
                 }

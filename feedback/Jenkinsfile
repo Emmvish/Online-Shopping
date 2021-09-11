@@ -1,0 +1,109 @@
+// DOCKER COMPOSE METHOD
+
+pipeline {
+    agent { label 'linux' }
+    stages {      
+        stage('Cleanup') {
+            steps {
+                sh 'docker-compose stop production-feedback development-feedback'
+                sh 'docker-compose rm production-feedback development-feedback'
+                sh 'rm -r *'
+            }
+        }
+        stage('Clone') {
+            steps {
+                sh 'git clone https://github.com/Emmvish/Online-Shopping.git .'
+                sh "find . -mindepth 1  ! -regex '^./feedback\(/.*\)?' -delete"
+            }
+        }
+        stage('Test & Deploy') {
+            steps {
+                sh 'cd feedback && docker-compose up --detach --build production-feedback development-feedback'
+            }
+        }
+    }
+} 
+
+
+// PURE DOCKER CLIENT METHOD
+
+// pipeline {
+//     agent { label 'linux' }
+//     stages {      
+//         stage('Cleanup') {
+//             steps {
+//                 sh 'docker stop feedback feedback-test'
+//                 sh 'docker rm feedback feedback-test'
+//                 sh 'rm -r *'
+//             }
+//         }
+//         stage('Clone') {
+//             steps {
+//                 sh 'git clone https://github.com/Emmvish/Online-Shopping.git .'
+//                 sh "find . -mindepth 1  ! -regex '^./feedback\(/.*\)?' -delete"
+//             }
+//         }
+//         stage('Test') {
+//             steps {
+//                 sh 'cd feedback && docker build -f Dockerfile.dev -t emmvish/feedback-test:latest .'
+//                 sh 'docker run -d --name feedback-test emmvish/feedback-test:latest '
+//             }
+//         }
+//         stage('Deploy') {
+//             steps {
+//                 sh 'cd feedback && docker build -t emmvish/feedback:latest .'
+//                 sh 'docker run -d --env-file=config/config.env -p ${PORT}:${PORT} -p ${MONGODB_PORT}:${MONGODB_PORT} --name feedback emmvish/feedback:latest'
+//             }
+//         }
+//     }
+// } 
+
+
+// JENKINS-DOCKER PLUGIN METHOD
+
+// pipeline {
+//     agent { label 'linux' }
+//     stages {      
+//         stage('Cleanup') {
+//             steps {
+//                 sh 'docker stop feedback feedback-test'
+//                 sh 'docker rm feedback feedback-test'
+//                 sh 'rm -r *'
+//             }
+//         }
+//         stage('Clone') {
+//             steps {
+//                 sh 'git clone https://github.com/Emmvish/Online-Shopping.git .'
+//                 sh "find . -mindepth 1  ! -regex '^./feedback\(/.*\)?' -delete"
+//             }
+//         }
+//         stage('Test') {
+//             agent {
+//                 dockerfile { 
+// 			           filename 'Dockerfile.dev'
+//                     dir 'feedback'
+//                     label 'linux'
+//                     args '-d --name feedback-test'
+// 		        }
+//             }
+//             steps {
+//                 sh 'node -v'
+//                 sh 'npm -v'
+//             }
+//         }
+//         stage('Deploy') {
+//             agent {
+//                 dockerfile { 
+// 			           filename 'Dockerfile'
+//                     dir 'feedback'
+//                     label 'linux'
+//                     args '-d --env-file=config/config.env -p ${PORT}:${PORT} -p ${MONGODB_PORT}:${MONGODB_PORT} --name feedback'
+// 		        }
+//             }
+//             steps {
+//                 sh 'node -v'
+//                 sh 'npm -v'
+//             }
+//         }
+//     }
+// } 

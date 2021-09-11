@@ -1,0 +1,15 @@
+version: '3'
+services: 
+  production-feedback:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${PORT}:${PORT}"
+      - "${MONGODB_PORT}:${MONGODB_PORT}"
+    env_file:
+      - ./config/config.env
+  development-feedback:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
