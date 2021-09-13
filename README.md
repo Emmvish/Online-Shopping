@@ -13,6 +13,10 @@ This application offers the following features to its users (site admins, retail
 8. Customers can search on the names of products as well as retailers, by passing a search term.
 9. Every customer is allocated a cart to place their products in, so that they can order these products at the end of their shopping activity.
 10. Forbidden or rejected products do not appear to the customers, in their search results.
+11. Allow Retailers to provide their customers with discount coupons for their products.
+12. Customers and Retailers to submit feedback about their experience with website, which site admins can view.
+13. Allow customers to submit their complaints regarding a product to its respective seller and site admins.
+14. Site Admins can moderate and hide objectionable products and users.
 
 Every microservice has been thoroughly tested using JEST unit testing framework. 
 
