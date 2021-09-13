@@ -29,7 +29,7 @@ router.post('/products/add', auth, async (req, res) => {
     }
 })
 
-router.post('/products/delete', auth, async (req, res) => {
+router.delete('/products/delete', auth, async (req, res) => {
     if(req.user.role === 'seller') {
         try {  
             const product = await Product.findOne({ sellerId: req.user._id, _id: req.body.product._id });
@@ -49,7 +49,7 @@ router.post('/products/delete', auth, async (req, res) => {
     }
 })
 
-router.post('/products/edit', auth, async (req, res) => {
+router.patch('/products/edit', auth, async (req, res) => {
     if(req.user.role === 'seller') {
         try {  
             const product = await Product.findOne({ sellerId: req.user._id, _id: req.body.product._id });

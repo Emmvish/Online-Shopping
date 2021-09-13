@@ -131,7 +131,7 @@ test('Should not get profile for unauthenticated user', async () => {
 
 test('Should NOT delete other account as non-admin', async () => {
     const response = await request(app)
-        .post('/users/admindelete')
+        .delete('/users/admindelete')
         .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
         .send({ currentName: 'Jess' }).expect(401)
     expect(response.body).toMatchObject({ error: 'Such request can only be entertained for site admins.' })
@@ -141,7 +141,7 @@ test('Should NOT delete other account as non-admin', async () => {
 
 test('Should delete my own account', async () => {
     await request(app)
-        .post('/users/delete')
+        .delete('/users/delete')
         .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
         .send().expect(201)
     const user = await User.findById(userOneId)
@@ -150,7 +150,7 @@ test('Should delete my own account', async () => {
 
 test('Should be able to delete other account as an admin', async () => {
     await request(app)
-        .post('/users/admindelete')
+        .delete('/users/admindelete')
         .set('Authorization', `Bearer ${userTwo.tokens[0].token}`)
         .send({ currentName: 'Mike' }).expect(201)
     const user = await User.findById(userOneId)
@@ -159,21 +159,21 @@ test('Should be able to delete other account as an admin', async () => {
 
 test('Should NOT delete account for unauthenticated user on delete route', async () => {
     const response = await request(app)
-        .post('/users/delete')
+        .delete('/users/delete')
         .send().expect(401)
     expect(response.body).toMatchObject({ error: 'Please Authenticate!' })    
 })
 
 test('Should NOT delete account for unauthenticated user on admindelete route', async () => {
     const response = await request(app)
-        .post('/users/admindelete')
+        .delete('/users/admindelete')
         .send().expect(401)
     expect(response.body).toMatchObject({ error: 'Please supply an authentication token!' })    
 })
 
 test('Should update valid user fields', async () => {
     await request(app)
-        .post('/users/edit')
+        .patch('/users/edit')
         .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
         .send({
             name: 'WTFNAME'
@@ -185,7 +185,7 @@ test('Should update valid user fields', async () => {
 
 test('Should not update invalid user fields', async () => {
     await request(app)
-        .post('/users/edit')
+        .patch('/users/edit')
         .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
         .send({
             location: 'Australia'

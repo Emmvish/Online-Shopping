@@ -31,7 +31,7 @@ test('Should NOT add a new product for a non-seller', async () => {
 })
 
 test('Should delete existing product that was put on sale by a seller', async () => {
-    await request(app).post('/products/delete').set('Authorization', `Bearer ${userOne.tokens[0].token}`).send({
+    await request(app).delete('/products/delete').set('Authorization', `Bearer ${userOne.tokens[0].token}`).send({
         product: {
             _id: productThreeId
         }
@@ -41,7 +41,7 @@ test('Should delete existing product that was put on sale by a seller', async ()
 })
 
 test('Should not allow one seller to delete product of another seller', async () => {
-    const response = await request(app).post('/products/delete').set('Authorization', `Bearer ${userOne.tokens[0].token}`).send({
+    const response = await request(app).delete('/products/delete').set('Authorization', `Bearer ${userOne.tokens[0].token}`).send({
         product: {
             _id: productTwoId
         }
@@ -52,7 +52,7 @@ test('Should not allow one seller to delete product of another seller', async ()
 })
 
 test('Should not allow a non-seller to delete any products', async () => {
-    const response = await request(app).post('/products/delete').set('Authorization', `Bearer ${userThree.tokens[0].token}`).send({
+    const response = await request(app).delete('/products/delete').set('Authorization', `Bearer ${userThree.tokens[0].token}`).send({
         product: {
             _id: productOneId
         }
@@ -63,7 +63,7 @@ test('Should not allow a non-seller to delete any products', async () => {
 })
 
 test('Should not allow a non-seller edit a product', async () => {
-    const response = await request(app).post('/products/edit').set('Authorization', `Bearer ${userThree.tokens[0].token}`).send({
+    const response = await request(app).patch('/products/edit').set('Authorization', `Bearer ${userThree.tokens[0].token}`).send({
         product: {
             _id: productOneId,
             updates: { name: 'test' }
@@ -75,7 +75,7 @@ test('Should not allow a non-seller edit a product', async () => {
 })
 
 test('Should not allow one seller to edit a product of another seller', async () => {
-    const response = await request(app).post('/products/edit').set('Authorization', `Bearer ${userOne.tokens[0].token}`).send({
+    const response = await request(app).patch('/products/edit').set('Authorization', `Bearer ${userOne.tokens[0].token}`).send({
         product: {
             _id: productTwoId,
             updates: { name: 'test' }
@@ -87,7 +87,7 @@ test('Should not allow one seller to edit a product of another seller', async ()
 })
 
 test('Should not edit an invalid field for any product, as a seller', async () => {
-    const response = await request(app).post('/products/edit').set('Authorization', `Bearer ${userTwo.tokens[0].token}`).send({
+    const response = await request(app).patch('/products/edit').set('Authorization', `Bearer ${userTwo.tokens[0].token}`).send({
         product: {
             _id: productTwoId,
             updates: { rating: 4.5 }
@@ -99,7 +99,7 @@ test('Should not edit an invalid field for any product, as a seller', async () =
 })
 
 test('Should allow seller to edit valid fields of their products', async () => {
-    const response = await request(app).post('/products/edit').set('Authorization', `Bearer ${userOne.tokens[0].token}`).send({
+    const response = await request(app).patch('/products/edit').set('Authorization', `Bearer ${userOne.tokens[0].token}`).send({
         product: {
             _id: productThreeId,
             updates: { name: 'test' }
@@ -110,7 +110,7 @@ test('Should allow seller to edit valid fields of their products', async () => {
 })
 
 test('Should allow an admin to reject a product by editing its status', async () => {
-    const response = await request(app).post('/products/edit').set('Authorization', `Bearer ${userFour.tokens[0].token}`).send({
+    const response = await request(app).patch('/products/edit').set('Authorization', `Bearer ${userFour.tokens[0].token}`).send({
         product: {
             _id: productThreeId,
             updates: { status: 'rejected' }
@@ -122,7 +122,7 @@ test('Should allow an admin to reject a product by editing its status', async ()
 })
 
 test('Should NOT allow an admin to edit any field of a product other than its status', async () => {
-    const response = await request(app).post('/products/edit').set('Authorization', `Bearer ${userFour.tokens[0].token}`).send({
+    const response = await request(app).patch('/products/edit').set('Authorization', `Bearer ${userFour.tokens[0].token}`).send({
         product: {
             _id: productThreeId,
             updates: { name: 'xyz' }

@@ -156,7 +156,7 @@ async function editAccount(req, res) {
     }
 }
 
-router.post('/users/edit', auth, async (req, res) => {
+router.patch('/users/edit', auth, async (req, res) => {
     await editAccount(req, res);
 })
 
@@ -183,11 +183,11 @@ async function deleteAccount (req, res, admin) {
     }
 }
 
-router.post('/users/delete', auth, async (req, res) => {
+router.delete('/users/delete', auth, async (req, res) => {
     await deleteAccount(req, res, false);
 })
 
-router.post('/users/admindelete', authAdmin, async (req, res) => {
+router.delete('/users/admindelete', authAdmin, async (req, res) => {
     await deleteAccount(req, res, true);
 })
 
