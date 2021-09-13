@@ -38,6 +38,35 @@ const userSchema = new mongoose.Schema({
             type: String,
             required: true
         }
+    }],
+    coupons: [{
+        code: {
+            type: String,
+            unique: true,
+            required: true
+        },
+        discountPercentage: {
+            type: Number,
+            minimum: 10,
+            maximum: 100,
+            required: true
+        },
+        productId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Product'
+        },
+        productName: {
+            type: String
+        },
+        sellerName: {
+            type: String,
+            required: true
+        },
+        sellerId: {
+            type: mongoose.Schema.Types.ObjectId,
+            required: true,
+            ref: 'User'
+        },
     }]
 }, {
     timestamps: true

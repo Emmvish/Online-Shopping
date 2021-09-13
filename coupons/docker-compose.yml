@@ -1,0 +1,15 @@
+version: '3'
+services: 
+  production-coupons:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${PORT}:${PORT}"
+      - "${MONGODB_PORT}:${MONGODB_PORT}"
+    env_file:
+      - ./config/config.env
+  development-coupons:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev

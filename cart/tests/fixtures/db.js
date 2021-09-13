@@ -6,6 +6,8 @@ const Cart = require('../../models/cart')
 
 const jwtSecret = process.env.JWT_SECRET || 'Some-Secret-Key'
 
+const productFourId = new mongoose.Types.ObjectId()
+
 const userOneId = new mongoose.Types.ObjectId()
 const userOne = {
     _id: userOneId,
@@ -15,6 +17,14 @@ const userOne = {
     address: 'New York',
     tokens: [{
         token: jwt.sign({ _id: userOneId }, jwtSecret)
+    }],
+    coupons: [{
+        productId: productFourId,
+        productName: 'T-shirt',
+        sellerId: userOneId,
+        sellerName: 'Mike',
+        code: 'MIKE20',
+        discountPercentage: 20
     }]
 }
 
@@ -27,6 +37,12 @@ const userTwo = {
     address: 'Berlin',
     tokens: [{
         token: jwt.sign({ _id: userTwoId }, jwtSecret)
+    }], 
+    coupons: [{
+        sellerId: userTwoId,
+        sellerName: 'Hamilton',
+        code: 'HAMILTON20',
+        discountPercentage: 20
     }]
 }
 
@@ -39,6 +55,19 @@ const userThree = {
     address: 'Delhi',
     tokens: [{
         token: jwt.sign({ _id: userThreeId }, jwtSecret)
+    }], 
+    coupons: [{
+        sellerId: userTwoId,
+        sellerName: 'Hamilton',
+        code: 'HAMILTON20',
+        discountPercentage: 20
+    }, {
+        productId: productFourId,
+        productName: 'T-shirt',
+        sellerId: userOneId,
+        sellerName: 'Mike',
+        code: 'MIKE20',
+        discountPercentage: 20
     }]
 }
 
@@ -84,12 +113,29 @@ const productThree = {
     sellerId: userOneId
 }
 
+const productFour = {
+    _id: productFourId,
+    name: 'T-shirt',
+    price: 40,
+    quantity: 50,
+    status: 'approved',
+    sellerId: userOneId
+}
+
 const cartOneId = new mongoose.Types.ObjectId()
 const cartOne = {
     _id: cartOneId,
     userId: userThreeId,
     products: [
-        { productId: productOneId, quantity: 1, ordered: false }
+        { productId: productOneId, quantity: 1, ordered: false, coupon: [{
+            productId: productOneId,
+            productName: 'Milton Jar',
+            sellerId: userTwoId,
+            sellerName: 'Hamilton',
+            code: 'HAMILTON20',
+            discountPercentage: 20
+         }] },
+        { productId: productFourId, quantity: 1, ordered: false }
     ]
 }
 
@@ -98,7 +144,10 @@ const cartTwo = {
     _id: cartTwoId,
     userId: userFourId,
     products: [
-        { productId: productOneId, quantity: 100, ordered: false }
+        { productId: productOneId, 
+          quantity: 100, 
+          ordered: false,
+        }
     ]
 }
 
@@ -113,6 +162,7 @@ const setupDatabase = async () => {
     await new Product(productOne).save()
     await new Product(productTwo).save()
     await new Product(productThree).save()
+    await new Product(productFour).save()
     await new Cart(cartOne).save()
     await new Cart(cartTwo).save()
 }
@@ -135,5 +185,6 @@ module.exports = {
     cartOneId,
     cartTwo,
     cartTwoId,
+    productFourId,
     setupDatabase
 }

@@ -3,7 +3,8 @@ const request = require('supertest')
 
 const app = require('../index')
 const Cart = require('../models/cart')
-const { userOne, userTwo, userThree, userThreeId, userFour, productOneId, productTwoId, cartOne, cartOneId, cartTwoId, setupDatabase } = require('./fixtures/db')
+const User = require('../models/user')
+const { userOne, userTwo, userTwoId, userThree, userThreeId, userFour, productOneId, productTwoId, cartOne, cartOneId, cartTwoId, setupDatabase } = require('./fixtures/db')
 
 beforeEach(setupDatabase)
 
@@ -48,9 +49,9 @@ test('Should remove existing product from cart, as a customer', async () => {
             quantity: -1
         }
     }).expect(201);
-    expect(response.body.cart.products.length).toBe(0)
+    expect(response.body.cart.products.length).toBe(1)
     const cart = await Cart.findOne({ userId: userThreeId });
-    expect(cart.products.length).toBe(0)
+    expect(cart.products.length).toBe(1)
 })
 
 test('Should NOT allow access to shopping cart for a non-customer', async () => {
@@ -64,18 +65,18 @@ test('Should NOT allow access to shopping cart for a non-customer', async () => 
 })
 
 test('Should remove existing product from cart, as a customer using delete route', async () => {
-    const response = await request(app).post('/cart/delete').set('Authorization', `Bearer ${userThree.tokens[0].token}`).send({
+    const response = await request(app).delete('/cart/delete').set('Authorization', `Bearer ${userThree.tokens[0].token}`).send({
         product: {
             _id: productOneId
         }
     }).expect(201);
-    expect(response.body.cart.products.length).toBe(0)
+    expect(response.body.cart.products.length).toBe(1)
     const cart = await Cart.findOne({ userId: userThreeId });
-    expect(cart.products.length).toBe(0)
+    expect(cart.products.length).toBe(1)
 })
 
 test('Should NOT remove non-existing product from cart, as a customer using delete route', async () => {
-    const response = await request(app).post('/cart/delete').set('Authorization', `Bearer ${userThree.tokens[0].token}`).send({
+    const response = await request(app).delete('/cart/delete').set('Authorization', `Bearer ${userThree.tokens[0].token}`).send({
         product: {
             _id: productTwoId
         }
@@ -86,7 +87,7 @@ test('Should NOT remove non-existing product from cart, as a customer using dele
 })
 
 test('Should NOT remove existing product from cart, as a non-customer using delete route', async () => {
-    const response = await request(app).post('/cart/delete').set('Authorization', `Bearer ${userOne.tokens[0].token}`).send({
+    const response = await request(app).delete('/cart/delete').set('Authorization', `Bearer ${userOne.tokens[0].token}`).send({
         product: {
             _id: productTwoId
         }
@@ -95,12 +96,12 @@ test('Should NOT remove existing product from cart, as a non-customer using dele
 })
 
 test('Should fetch products in the cart of a customer', async () => {
-    const response = await request(app).post('/cart').set('Authorization', `Bearer ${userThree.tokens[0].token}`).send().expect(200);
+    const response = await request(app).get('/cart').set('Authorization', `Bearer ${userThree.tokens[0].token}`).send().expect(200);
     expect(response.body.cart.products.length).toBe(cartOne.products.length)
 })
 
 test('Should NOT fetch products if non-customer tries to view their cart', async () => {
-    const response = await request(app).post('/cart').set('Authorization', `Bearer ${userOne.tokens[0].token}`).send().expect(400);
+    const response = await request(app).get('/cart').set('Authorization', `Bearer ${userOne.tokens[0].token}`).send().expect(400);
     expect(response.body).toMatchObject({ error: "You can only perform this operation as a customer!" })
 })
 
@@ -121,4 +122,94 @@ test('Should NOT place order for a product which is not available in desired qua
     expect(response.body).toMatchObject({ error: 'Some of your products could NOT be ordered!' })
     const cart = await Cart.findOne({ _id: cartTwoId });
     expect(cart.products.length).not.toBe(0);
+})
+
+test('Should apply coupon to seller product in a cart', async () => {
+    const response = await request(app).post('/cart/applyCoupon').set('Authorization', `Bearer ${userThree.tokens[0].token}`).send({
+        coupon: {
+            code: 'HAMILTON20'
+        }
+    }).expect(200);
+    expect(response.body.message).toBe('Coupon has been consumed!')
+    const user = await User.findOne({ _id: userThreeId })
+    expect(user.coupons.length).toBe(1);
+    const cart = await Cart.findOne({ userId: userThreeId });
+    expect(cart.products[0].coupon[0].code).toBe('HAMILTON20')
+})
+
+test('Should NOT apply a coupon is user is not a customer', async () => {
+    const response = await request(app).post('/cart/applyCoupon').set('Authorization', `Bearer ${userTwo.tokens[0].token}`).send({
+        coupon: {
+            code: 'HAMILTON20'
+        }
+    }).expect(400);
+    expect(response.body.error).toBe('You can only make this request as a customer!')
+})
+
+test('Should NOT apply an invalid coupon', async () => {
+    const response = await request(app).post('/cart/applyCoupon').set('Authorization', `Bearer ${userThree.tokens[0].token}`).send({
+        coupon: {
+            code: 'LOLWTF'
+        }
+    }).expect(404);
+    expect(response.body.error).toBe('Invalid Coupon!')
+})
+
+test('Should apply coupon to a particular product in cart', async () => {
+    const response = await request(app).post('/cart/applyCoupon').set('Authorization', `Bearer ${userThree.tokens[0].token}`).send({
+        coupon: {
+            code: 'MIKE20'
+        }
+    }).expect(200);
+    expect(response.body.message).toBe('Coupon has been consumed!')
+    const user = await User.findOne({ _id: userThreeId })
+    expect(user.coupons.length).toBe(1);
+    const cart = await Cart.findOne({ userId: userThreeId });
+    expect(cart.products[1].coupon[0].code).toBe('MIKE20')
+})
+
+test('Should remove a coupon that has been applied onto a product', async () => {
+    const response = await request(app).delete('/cart/deleteCoupon').set('Authorization', `Bearer ${userThree.tokens[0].token}`).send({
+        coupon: {
+            productId: productOneId
+        }
+    }).expect(200);
+    expect(response.body.message).toBe('Coupon has been removed from this product/seller!')
+    const user = await User.findOne({ _id: userThreeId })
+    expect(user.coupons.length).toBe(3);
+    const cart = await Cart.findOne({ userId: userThreeId });
+    expect(cart.products[0].coupon[0]).toBe(null)
+})
+
+test('Should remove a seller-wide coupon that has been applied onto a product', async () => {
+    const response = await request(app).delete('/cart/deleteCoupon').set('Authorization', `Bearer ${userThree.tokens[0].token}`).send({
+        coupon: {
+            sellerId: userTwoId
+        }
+    }).expect(200);
+    expect(response.body.message).toBe('Coupon has been removed from this product/seller!')
+    const user = await User.findOne({ _id: userThreeId })
+    expect(user.coupons.length).toBe(3);
+    const cart = await Cart.findOne({ userId: userThreeId });
+    expect(cart.products[0].coupon[0]).toBe(null)
+})
+
+test('Should NOT remove an invalid seller-wide coupon that has been applied onto a product', async () => {
+    const response = await request(app).delete('/cart/deleteCoupon').set('Authorization', `Bearer ${userThree.tokens[0].token}`).send({
+        coupon: {
+            sellerId: userThreeId
+        }
+    }).expect(404);
+    expect(response.body.error).toBe('Invalid Coupon!')
+    const user = await User.findOne({ _id: userThreeId })
+    expect(user.coupons.length).toBe(2);
+})
+
+test('Should NOT allow non-customer to use /deleteCoupon route', async () => {
+    const response = await request(app).delete('/cart/deleteCoupon').set('Authorization', `Bearer ${userTwo.tokens[0].token}`).send({
+        coupon: {
+            sellerId: userThreeId
+        }
+    }).expect(400);
+    expect(response.body.error).toBe('You can only make this request as a customer!')
 })

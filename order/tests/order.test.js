@@ -1,7 +1,7 @@
 const request = require('supertest')
 const app = require('../index')
 const Order = require('../models/order')
-const { userOne, userTwoId, userTwo, userThree, userThreeId, userFour, productTwoId, productThreeId, orderOne, orderOneId, setupDatabase } = require('./fixtures/db')
+const { userOne, userTwoId, userTwo, userThree, userThreeId, userFour, productOneId, productTwoId, productThreeId, orderOne, orderOneId, setupDatabase } = require('./fixtures/db')
 
 beforeEach(setupDatabase)
 
@@ -30,7 +30,7 @@ test('Should NOT allow customers to order rejected products', async () => {
 })
 
 test('Should allow customers to order approved products', async () => {
-    const response = await request(app).post('/order').set('Authorization', `Bearer ${userThree.tokens[0].token}`).send({
+    await request(app).post('/order').set('Authorization', `Bearer ${userThree.tokens[0].token}`).send({
         product: {
             _id: productThreeId,
             quantity: 2
@@ -40,8 +40,48 @@ test('Should allow customers to order approved products', async () => {
     expect(order).not.toBeNull();
 })
 
+test('Should allow customers to avail discount using a coupon code', async () => {
+    await request(app).post('/order').set('Authorization', `Bearer ${userThree.tokens[0].token}`).send({
+        product: {
+            _id: productOneId,
+            quantity: 2
+        },
+        coupon: {
+            code: 'ILOVESJ'
+        }
+    }).expect(201);
+    const orders = await Order.find({ userId: userThreeId, productId: productOneId })
+    expect(orders[1].totalValue).toBe(80);
+})
+
+test('Should NOT allow discount code of one product to be applied onto another', async () => {
+    const response = await request(app).post('/order').set('Authorization', `Bearer ${userThree.tokens[0].token}`).send({
+        product: {
+            _id: productThreeId,
+            quantity: 2
+        },
+        coupon: {
+            code: 'ILOVESJ'
+        }
+    }).expect(404);
+    expect(response.body.error).toBe('Invalid Coupon!')
+})
+
+test('Should NOT allow customer to use invalid discount code', async () => {
+    const response = await request(app).post('/order').set('Authorization', `Bearer ${userThree.tokens[0].token}`).send({
+        product: {
+            _id: productOneId,
+            quantity: 2
+        },
+        coupon: {
+            code: 'BLABLABLA'
+        }
+    }).expect(404);
+    expect(response.body.error).toBe('Invalid Coupon!')
+})
+
 test('Should allow sellers to edit status of their order', async () => {
-    await request(app).post('/order/edit').set('Authorization', `Bearer ${userOne.tokens[0].token}`).send({
+    await request(app).patch('/order/edit').set('Authorization', `Bearer ${userOne.tokens[0].token}`).send({
         order: {
             _id: orderOneId,
             updates: { status: 'delivered' }
@@ -52,7 +92,7 @@ test('Should allow sellers to edit status of their order', async () => {
 })
 
 test('Should NOT allow a seller to edit order of another seller', async () => {
-    const response = await request(app).post('/order/edit').set('Authorization', `Bearer ${userTwo.tokens[0].token}`).send({
+    const response = await request(app).patch('/order/edit').set('Authorization', `Bearer ${userTwo.tokens[0].token}`).send({
         order: {
             _id: orderOneId,
             updates: { status: 'delivered' }
@@ -64,7 +104,7 @@ test('Should NOT allow a seller to edit order of another seller', async () => {
 })
 
 test('Should NOT allow a non-seller to edit any order', async () => {
-    const response = await request(app).post('/order/edit').set('Authorization', `Bearer ${userThree.tokens[0].token}`).send({
+    const response = await request(app).patch('/order/edit').set('Authorization', `Bearer ${userThree.tokens[0].token}`).send({
         order: {
             _id: orderOneId,
             updates: { status: 'delivered' }
@@ -76,7 +116,7 @@ test('Should NOT allow a non-seller to edit any order', async () => {
 })
 
 test('Should NOT allow a seller to update any property other than status of their order', async () => {
-    const response = await request(app).post('/order/edit').set('Authorization', `Bearer ${userOne.tokens[0].token}`).send({
+    const response = await request(app).patch('/order/edit').set('Authorization', `Bearer ${userOne.tokens[0].token}`).send({
         order: {
             _id: orderOneId,
             updates: { sellerId: userTwoId }

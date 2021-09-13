@@ -2,9 +2,8 @@ const mongoose = require('mongoose')
 const jwt = require('jsonwebtoken')
 const User = require('../../models/user')
 const Product = require('../../models/product')
-const Order = require('../../models/order')
 
-const jwtSecret = process.env.JWT_SECRET || 'Some-Secret-Key';
+const jwtSecret = process.env.JWT_SECRET || 'Some-Secret-Key'
 
 const userOneId = new mongoose.Types.ObjectId()
 const userOne = {
@@ -15,10 +14,14 @@ const userOne = {
     address: 'New York',
     tokens: [{
         token: jwt.sign({ _id: userOneId }, jwtSecret)
+    }],
+    coupons: [{
+        sellerId: userOneId,
+        sellerName: 'Mike',
+        code: 'SJLOVESMV',
+        discountPercentage: 25
     }]
 }
-
-const productOneId = new mongoose.Types.ObjectId()
 
 const userTwoId = new mongoose.Types.ObjectId()
 const userTwo = {
@@ -31,12 +34,10 @@ const userTwo = {
         token: jwt.sign({ _id: userTwoId }, jwtSecret)
     }],
     coupons: [{
-        productId: productOneId,
-        productName: 'Milton Jar',
         sellerId: userTwoId,
         sellerName: 'Hamilton',
         code: 'ILOVESJ',
-        discountPercentage: 20
+        discountPercentage: 40
     }]
 }
 
@@ -49,31 +50,33 @@ const userThree = {
     address: 'Delhi',
     tokens: [{
         token: jwt.sign({ _id: userThreeId }, jwtSecret)
-    }], 
-    coupons: [
-        {
-            productId: productOneId,
-            productName: 'Milton Jar',
-            sellerId: userTwoId,
-            sellerName: 'Hamilton',
-            code: 'ILOVESJ',
-            discountPercentage: 20
-        }
-    ]
+    }],
+    coupons: [{
+        sellerId: userTwoId,
+        sellerName: 'Hamilton',
+        code: 'ILOVESJ',
+        discountPercentage: 40
+    }, {
+        sellerId: userOneId,
+        sellerName: 'Mike',
+        code: 'SJLOVESMV',
+        discountPercentage: 25
+    }]
 }
 
 const userFourId = new mongoose.Types.ObjectId()
 const userFour = {
     _id: userFourId,
-    name: 'Playa',
-    email: 'playmes@example.com',
+    name: 'Man',
+    email: 'man@example.com',
     role: 'admin',
-    address: 'London',
+    address: 'Delhi',
     tokens: [{
         token: jwt.sign({ _id: userFourId }, jwtSecret)
     }]
 }
 
+const productOneId = new mongoose.Types.ObjectId()
 const productOne = {
     _id: productOneId,
     name: 'Milton Jar',
@@ -98,38 +101,14 @@ const productThree = {
     _id: productThreeId,
     name: 'Spoon',
     price: 35,
-    quantity: 45,
+    quantity: 0,
     status: 'approved',
     sellerId: userOneId
-}
-
-const orderOneId = new mongoose.Types.ObjectId()
-const orderOne = {
-    _id: orderOneId,
-    productId: productThreeId,
-    sellerId: userOneId,
-    quantity: 5,
-    userId: userThreeId,
-    date: Date.now(),
-    status: 'cancelled',
-    totalValue: 175
-}
-const orderTwoId = new mongoose.Types.ObjectId()
-const orderTwo = {
-    _id: orderTwoId,
-    productId: productOneId,
-    sellerId: userTwoId,
-    quantity: 3,
-    userId: userThreeId,
-    date: Date.now(),
-    status: 'pending',
-    totalValue: 150
 }
 
 const setupDatabase = async () => {
     await User.deleteMany()
     await Product.deleteMany()
-    await Order.deleteMany()
     await new User(userOne).save()
     await new User(userTwo).save()
     await new User(userThree).save()
@@ -137,8 +116,6 @@ const setupDatabase = async () => {
     await new Product(productOne).save()
     await new Product(productTwo).save()
     await new Product(productThree).save()
-    await new Order(orderOne).save()
-    await new Order(orderTwo).save()
 }
 
 module.exports = {
@@ -149,15 +126,12 @@ module.exports = {
     userThreeId,
     userThree,
     userFour,
+    userFourId,
     productOneId,
     productOne,
     productTwoId,
     productTwo,
     productThreeId,
     productThree,
-    orderOneId,
-    orderOne,
-    orderTwoId,
-    orderTwo,
     setupDatabase
 }

@@ -16,7 +16,8 @@ const researchServiceUrl = process.env.RESEARCH_SERVICE_URL || 'http://localhost
 const cartServiceUrl = process.env.CART_SERVICE_URL || 'http://localhost:4006/events'
 const orderServiceUrl = process.env.ORDER_SERVICE_URL || 'http://localhost:4007/events'
 const payoutServiceUrl = process.env.PAYOUT_SERVICE_URL || 'http://localhost:4008/events'
-const feedbackServiceUrl = process.env.PAYOUT_SERVICE_URL || 'http://localhost:4009/events'
+const feedbackServiceUrl = process.env.FEEDBACK_SERVICE_URL || 'http://localhost:4009/events'
+const couponsServiceUrl = process.env.COUPONS_SERVICE_URL || 'http://localhost:4010/events'
 
 app.post('/events', (req, res)=>{
     const event = req.body;
@@ -44,6 +45,9 @@ app.post('/events', (req, res)=>{
         console.log(err)
     })
     axios.post(feedbackServiceUrl, event).catch((err)=>{
+        console.log(err)
+    })
+    axios.post(couponsServiceUrl, event).catch((err)=>{
         console.log(err)
     })
     res.send({ status: 'OK' })

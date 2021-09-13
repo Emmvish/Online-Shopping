@@ -13,7 +13,7 @@ router.post('/payout', auth, async (req, res) => {
     }
 })
 
-router.post('/payout/reset', auth, async (req, res) => {
+router.patch('/payout/reset', auth, async (req, res) => {
     if(req.user.role === 'admin') {
         await User.updateMany({ role: 'seller' }, { $set: { monthlyEarnings: 0 } })
         res.status(201).send({ message: 'Monthly Earnings of all retailers have been reset.' })

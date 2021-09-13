@@ -33,6 +33,10 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    createdAt: {
+        type: Date,
+        default: Date.now()
+    },
     tokens: [{
         token: {
             type: String,
@@ -71,6 +75,16 @@ const userSchema = new mongoose.Schema({
 }, {
     timestamps: true
 })
+
+// userSchema.methods.toJSON = function () {
+//     const user = this
+//     const userObject = user.toObject()
+//     delete userObject.tokens
+
+//     return userObject
+// }
+
+// userSchema.index({ name: 'text' })
 
 const User = mongoose.model('User', userSchema)
 

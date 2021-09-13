@@ -20,7 +20,27 @@ router.post('/order', auth, async (req, res) => {
             if(product.quantity - req.body.product.quantity < 0){
                 throw new Error('Product is not available in sufficient quantity!')
             }
-            const order = new Order({ date: Date.now(), sellerId: product.sellerId, userId: req.user._id, productId: product._id, quantity: req.body.product.quantity, totalValue: req.body.product.quantity*product.price, status: 'pending' })
+            let finalPrice = product.price;
+            if(req.body.coupon) {
+                const coupon = req.user.coupons.find((coupon) => coupon.code === req.body.coupon.code);
+                if(!coupon || coupon.discountPercentage < 10 || coupon.discountPercentage > 90) {
+                    throw new Error('Invalid Coupon!')
+                }
+                if(coupon && coupon.sellerId.toString() === product.sellerId.toString()) {
+                    if(coupon.productId) {
+                        if(coupon.productId.toString() !== product._id.toString()) {
+                            throw new Error('Invalid Coupon!')
+                        }
+                    }
+                    finalPrice = finalPrice*(1 - (coupon.discountPercentage/100))
+                    req.user.coupons = req.user.coupons.filter((coupon) => coupon.code !== req.body.coupon.code)
+                    await axios.post(eventBusUrl, { type: 'CouponUsed', data: { token: req.token, coupon: req.body.coupon } })
+                    await req.user.save();
+                } else {
+                    throw new Error('Invalid Coupon!')
+                }
+            }
+            const order = new Order({ date: Date.now(), sellerId: product.sellerId, userId: req.user._id, productId: product._id, quantity: req.body.product.quantity, totalValue: req.body.product.quantity*finalPrice, status: 'pending' })
             await order.save();
             axios.post(eventBusUrl, { type: 'OrderCreated', data: { token: req.token, product: req.body.product, order } }).catch((err)=>{
                     console.log(err);
@@ -34,7 +54,7 @@ router.post('/order', auth, async (req, res) => {
     }
 })
 
-router.post('/order/edit', auth, async (req, res) => {
+router.patch('/order/edit', auth, async (req, res) => {
     if(req.user.role === 'seller') {
         try {
             const order = await Order.findOne({ _id: req.body.order._id, sellerId: req.user._id })
