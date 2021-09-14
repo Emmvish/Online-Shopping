@@ -1,4 +1,3 @@
-const axios = require('axios')
 const express = require('express');
 
 const User = require('../models/user')
@@ -8,7 +7,19 @@ const auth = require('../middleware/auth')
 
 const router = new express.Router()
 
-const eventBusUrl = process.env.EVENT_BUS_URL || 'http://localhost:4001/events';
+const eventBusUrl = process.env.EVENT_BUS_URL || 'amqp://localhost'
+const connection = require('amqplib').connect(eventBusUrl);
+const couponQueue = process.env.COUPON_QUEUE || 'Coupon';
+
+let couponChannel;
+
+connection.then(function(conn) {
+    return conn.createChannel();
+}).then(function(ch) {
+    ch.assertQueue(couponQueue).then(function(ok) {
+        couponChannel = ch;
+    });
+}).catch(console.warn);
 
 router.post('/coupons/add', auth, async (req, res)=>{
     if(req.user.role === 'seller') {
@@ -36,9 +47,8 @@ router.post('/coupons/add', auth, async (req, res)=>{
                 users[i].coupons.push(req.body.coupon)
                 await users[i].save()
             }
-            axios.post(eventBusUrl, { type: 'CouponCreated', data: { token: req.token, coupon: req.body.coupon } }).catch((err)=>{
-                console.log(err.message);
-            })
+            const event = { type: 'CouponCreated', data: { token: req.token, coupon: req.body.coupon } }
+            couponChannel.sendToQueue(couponQueue, Buffer.from(JSON.stringify(event)));
             res.status(201).send({ message: "Coupon has been added!" })
         } catch(e) {
             res.status(404).send({ error: e.message })
@@ -64,9 +74,8 @@ router.delete('/coupons/delete', auth, async (req, res)=>{
                 users[i].coupons = users[i].coupons.filter((coupon) => coupon.code !== req.body.coupon.code);
                 await users[i].save()
             }
-            axios.post(eventBusUrl, { type: 'CouponDeleted', data: { token: req.token, coupon: req.body.coupon } }).catch((err)=>{
-                console.log(err.message);
-            })
+            const event = { type: 'CouponDeleted', data: { token: req.token, coupon: req.body.coupon } }
+            couponChannel.sendToQueue(couponQueue, Buffer.from(JSON.stringify(event)));
             res.status(200).send({ message: "Coupon has been removed!" })
         } catch(e) {
             res.status(404).send({ error: e.message })

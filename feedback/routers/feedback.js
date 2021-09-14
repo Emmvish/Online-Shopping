@@ -5,7 +5,6 @@ const Product = require('../models/product')
 
 const auth = require('../middleware/auth')
 const checkProduct = require('../middleware/product');
-const User = require('../models/user');
 
 const router = new express.Router()
 

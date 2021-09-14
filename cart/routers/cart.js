@@ -1,11 +1,32 @@
-const axios = require('axios');
 const express = require('express');
 
 const auth = require('../middleware/auth')
 const Cart = require('../models/cart')
 const Product = require('../models/product')
 
-const eventBusUrl = process.env.EVENT_BUS_URL || 'http://localhost:4001/events'
+const eventBusUrl = process.env.EVENT_BUS_URL || 'amqp://localhost'
+const connection = require('amqplib').connect(eventBusUrl);
+const orderQueue = process.env.ORDER_QUEUE || 'Order';
+const couponQueue = process.env.COUPON_QUEUE || 'Coupon';
+
+let orderChannel;
+let couponChannel;
+
+connection.then(function(conn) {
+    return conn.createChannel();
+}).then(function(ch) {
+    ch.assertQueue(orderQueue).then(function(ok) {
+        orderChannel = ch;
+    });
+}).catch(console.warn);
+
+connection.then(function(conn) {
+    return conn.createChannel();
+}).then(function(ch) {
+    ch.assertQueue(couponQueue).then(function(ok) {
+        couponChannel = ch;
+    });
+}).catch(console.warn);
 
 const router = new express.Router()
 
@@ -62,7 +83,8 @@ router.post('/cart/applyCoupon', auth, async(req, res) => {
                     if(productDetails.sellerId.toString() === coupon.sellerId.toString()) {
                         if(cart.products[i].coupon[0]) {
                             req.user.coupons.push(cart.products[i].coupon[0])
-                            await axios.post(eventBusUrl, { type: 'CouponAddedBack', data: { token: req.token, coupon: cart.products[i].coupon[0] } })
+                            const event = { type: 'CouponAddedBack', data: { token: req.token, coupon: cart.products[i].coupon[0] } }
+                            couponChannel.sendToQueue(couponQueue, Buffer.from(JSON.stringify(event)));
                         }
                         cart.products[i].coupon[0] = coupon;
                         cart.markModified('products.' + i + '.coupon.0')
@@ -74,7 +96,8 @@ router.post('/cart/applyCoupon', auth, async(req, res) => {
                     if(product.productId.toString() === coupon.productId.toString()) {
                         if(product.coupon[0]) {
                             req.user.coupons.push(product.coupon[0])
-                            await axios.post(eventBusUrl, { type: 'CouponAddedBack', data: { token: req.token, coupon: product.coupon[0] } })
+                            const event = { type: 'CouponAddedBack', data: { token: req.token, coupon: product.coupon[0] } }
+                            couponChannel.sendToQueue(couponQueue, Buffer.from(JSON.stringify(event)));
                         }
                         product.coupon[0] = coupon;
                         cart.markModified('products.' + i + '.coupon.0')
@@ -124,7 +147,8 @@ router.delete('/cart/deleteCoupon', auth, async(req, res) => {
                 await cart.save();
                 req.user.coupons.push(removedCoupon)
                 await req.user.save();
-                await axios.post(eventBusUrl, { type: 'CouponAddedBack', data: { token: req.token, coupon: req.body.coupon } })
+                const event = { type: 'CouponAddedBack', data: { token: req.token, coupon: req.body.coupon } }
+                couponChannel.sendToQueue(couponQueue, Buffer.from(JSON.stringify(event)));
                 res.status(200).send({ message: 'Coupon has been removed from this product/seller!' })
             } else {
                 throw new Error('Invalid Coupon!')
@@ -143,7 +167,8 @@ router.delete('/cart/delete', auth, async (req, res) => {
             const cart = await Cart.findOne({ userId: req.user._id });
             const product = cart.products.find((product) => product.productId.toString() === req.body.product._id.toString())
             if(product) {
-                await axios.post(eventBusUrl, { type: 'CouponAddedBack', data: { token: req.token, coupon: product.coupon[0] } })
+                const event = { type: 'CouponAddedBack', data: { token: req.token, coupon: product.coupon[0] } }
+                couponChannel.sendToQueue(couponQueue, Buffer.from(JSON.stringify(event)));
                 cart.products = cart.products.filter((product) => product.productId.toString() !== req.body.product._id.toString() )
                 await cart.save();
                 res.status(201).send({ cart })
@@ -185,7 +210,8 @@ router.post('/cart/placeOrder', auth, async (req, res) => {
                     continue;
                 }
                 try {
-                    await axios.post(eventBusUrl, { type: 'PlaceOrder', data: { token: req.token, product } })
+                    const event = { type: 'PlaceOrder', data: { token: req.token, product } }
+                    orderChannel.sendToQueue(orderQueue, Buffer.from(JSON.stringify(event)));
                     product.ordered = true;
                 } catch(err) {
                     console.log(err);

@@ -1,4 +1,3 @@
-const axios = require('axios');
 const express = require('express');
 
 const auth = require('../middleware/auth')
@@ -6,7 +5,29 @@ const Product = require('../models/product')
 const User = require('../models/user')
 const Order = require('../models/order')
 
-const eventBusUrl = process.env.EVENT_BUS_URL || 'http://localhost:4001/events'
+const eventBusUrl = process.env.EVENT_BUS_URL || "amqp://localhost"
+const connection = require('amqplib').connect(eventBusUrl);
+const orderQueue = process.env.ORDER_QUEUE || 'Order';
+const couponQueue = process.env.COUPON_QUEUE || 'Coupon';
+
+let orderChannel;
+let couponChannel;
+
+connection.then(function(conn) {
+    return conn.createChannel();
+}).then(function(ch) {
+    ch.assertQueue(orderQueue).then(function(ok) {
+        orderChannel = ch;
+    });
+}).catch(console.warn);
+
+connection.then(function(conn) {
+    return conn.createChannel();
+}).then(function(ch) {
+    ch.assertQueue(couponQueue).then(function(ok) {
+        couponChannel = ch;
+    });
+}).catch(console.warn);
 
 const router = new express.Router()
 
@@ -34,17 +55,17 @@ router.post('/order', auth, async (req, res) => {
                     }
                     finalPrice = finalPrice*(1 - (coupon.discountPercentage/100))
                     req.user.coupons = req.user.coupons.filter((coupon) => coupon.code !== req.body.coupon.code)
-                    await axios.post(eventBusUrl, { type: 'CouponUsed', data: { token: req.token, coupon: req.body.coupon } })
                     await req.user.save();
+                    const event = { type: 'CouponUsed', data: { token: req.token, coupon: req.body.coupon } }
+                    couponChannel.sendToQueue(couponQueue, Buffer.from(JSON.stringify(event)));
                 } else {
                     throw new Error('Invalid Coupon!')
                 }
             }
             const order = new Order({ date: Date.now(), sellerId: product.sellerId, userId: req.user._id, productId: product._id, quantity: req.body.product.quantity, totalValue: req.body.product.quantity*finalPrice, status: 'pending' })
             await order.save();
-            axios.post(eventBusUrl, { type: 'OrderCreated', data: { token: req.token, product: req.body.product, order } }).catch((err)=>{
-                    console.log(err);
-            })
+            const event = { type: 'OrderCreated', data: { token: req.token, product: req.body.product, order } }
+            orderChannel.sendToQueue(orderQueue, Buffer.from(JSON.stringify(event)));
             res.status(201).send({ order })
         } catch(e) {
             res.status(404).send({ error: e.message })
@@ -64,16 +85,14 @@ router.patch('/order/edit', auth, async (req, res) => {
             if(req.body.order.updates.status) {
                 order.status = req.body.order.updates.status;
                 await order.save();
-                axios.post(eventBusUrl, { type: 'OrderEdited', data: { token: req.token, order: req.body.order } }).catch((err)=>{
-                        console.log(err);
-                })
+                const event = { type: 'OrderEdited', data: { token: req.token, order: req.body.order } }
+                orderChannel.sendToQueue(orderQueue, Buffer.from(JSON.stringify(event)));
                 if(req.body.order.updates.status === 'cancelled') {
                     const product = await Product.findOne({ _id: order.productId })
                     product.quantity += order.quantity;
                     await product.save();
-                    axios.post(eventBusUrl, { type: 'OrderCancelled', data: { token: req.token, product: { productId: product._id, updates: { quantity: product.quantity } } } }).catch((err)=>{
-                        console.log(err);
-                    })
+                    const event = { type: 'OrderCancelled', data: { token: req.token, product: { productId: product._id, updates: { quantity: product.quantity } } } }
+                    orderChannel.sendToQueue(orderQueue, Buffer.from(JSON.stringify(event)));
                 }
                 res.status(201).send({ order });
             } else {

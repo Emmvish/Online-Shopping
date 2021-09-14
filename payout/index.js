@@ -7,6 +7,54 @@ const User = require('./models/user')
 const Product = require('./models/product')
 const Order = require('./models/order')
 
+const eventBusUrl = process.env.EVENT_BUS_URL || 'amqp://localhost'
+const connection = require('amqplib').connect(eventBusUrl);
+const userQueue = process.env.USER_QUEUE || 'User';
+const productQueue = process.env.PRODUCT_QUEUE || 'Product';
+const orderQueue = process.env.ORDER_QUEUE || 'Order';
+
+connection.then(function(conn) {
+    return conn.createChannel();
+}).then(function(ch) {
+    ch.assertQueue(userQueue).then(function(ok) {
+        return ch.consume(userQueue, function(msg) {
+        if (msg !== null) {
+            const { type, data } = JSON.parse(msg.content.toString())
+            handleEvent(type, data);
+            ch.ack(msg);
+        }
+    });
+});  
+}).catch(console.warn);
+
+connection.then(function(conn) {
+    return conn.createChannel();
+}).then(function(ch) {
+    ch.assertQueue(productQueue).then(function(ok) {
+        return ch.consume(productQueue, function(msg) {
+        if (msg !== null) {
+            const { type, data } = JSON.parse(msg.content.toString())
+            handleEvent(type, data);
+            ch.ack(msg);
+        }
+    });
+});  
+}).catch(console.warn);
+
+connection.then(function(conn) {
+    return conn.createChannel();
+}).then(function(ch) {
+    ch.assertQueue(orderQueue).then(function(ok) {
+        return ch.consume(orderQueue, function(msg) {
+        if (msg !== null) {
+            const { type, data } = JSON.parse(msg.content.toString())
+            handleEvent(type, data);
+            ch.ack(msg);
+        }
+    });
+});  
+}).catch(console.warn);
+
 const app = express();
 
 const serverPort = process.env.PORT || 4008;
@@ -15,7 +63,7 @@ app.use(express.json());
 
 app.use(payoutRouter);
 
-async function handleEvent(type, data, res) {
+async function handleEvent(type, data) {
 
     const jwtSecret = process.env.JWT_SECRET || 'Some-Secret-Key'
 
@@ -25,9 +73,8 @@ async function handleEvent(type, data, res) {
             const user = new User(data.user);
             try {
                 await user.save();
-                res.send();
             } catch(e) {
-                res.send({ error: e.message });
+                console.log(e.message)
             }
             break;
 
@@ -39,9 +86,8 @@ async function handleEvent(type, data, res) {
                 }
                 user.tokens = user.tokens.concat({ token: data.token });
                 await user.save();
-                res.send();
             } catch(e) {
-                res.send({ error: e.message });
+                console.log(e.message)
             }
             break;
 
@@ -55,12 +101,11 @@ async function handleEvent(type, data, res) {
                 if(data.user.role === 'admin' && adminUser.role === 'admin') {
                     const user = new User(data.user);
                     await user.save();
-                    res.send();
                 } else {
                     throw new Error('Error! Admin user was NOT created!')
                 }
             } catch(e) {
-                res.send({ error: e.message });
+                console.log(e.message)
             }
             break;
 
@@ -72,9 +117,8 @@ async function handleEvent(type, data, res) {
                     throw new Error('No such user exists!');
                 }
                 await user.remove();
-                res.send();
             } catch(e) {
-                res.send({ error: e.message });
+                console.log(e.message)
             }
             break;
 
@@ -90,9 +134,8 @@ async function handleEvent(type, data, res) {
                     throw new Error('This user does NOT exist!');
                 }
                 await userToRemove.remove();
-                res.send();
             } catch(e) {
-                res.send({ error: e.message });
+                console.log(e.message)
             }
             break;
 
@@ -114,9 +157,8 @@ async function handleEvent(type, data, res) {
                 }
                 updates.forEach((update) => user[update] = data.updates[update])
                 await user.save()
-                res.send();
             } catch(e) {
-                res.send({ error: e.message });
+                console.log(e.message)
             }
             break;
 
@@ -126,9 +168,8 @@ async function handleEvent(type, data, res) {
                 const user = await User.findOne({ _id: decoded._id, 'tokens.token': data.token })
                 user.tokens = user.tokens.filter((token) => token.token !== data.token);
                 await user.save();
-                res.send();
             } catch(e) {
-                res.send({ error: e.message });
+                console.log(e.message)
             }
             break;
 
@@ -141,9 +182,8 @@ async function handleEvent(type, data, res) {
                 }
                 const product = new Product(data.product);
                 await product.save();
-                res.send();
             } catch(e) {
-                res.send({ error: e.message });
+                console.log(e.message)
             }
             break;
 
@@ -159,9 +199,8 @@ async function handleEvent(type, data, res) {
                 throw new Error('Product was not found!')
             }
             await product.remove();
-            res.send();
         } catch(e) {
-            res.send({ error: e.message });
+            console.log(e.message)
         }
         break;
 
@@ -190,9 +229,8 @@ async function handleEvent(type, data, res) {
             }
             updates.forEach((update) => product[update] = data.product[update])
             await product.save();
-            res.send();
         } catch(e) {
-            res.send({ error: e.message });
+            console.log(e.message)
         }
         break;
 
@@ -210,9 +248,8 @@ async function handleEvent(type, data, res) {
             product.rating = ((product.totalRatings*product.rating) + data.product.rating)/(product.totalRatings + 1);
             product.totalRatings++;
             await product.save();
-            res.send();
         } catch(e) {
-            res.send({ error: e.message });
+            console.log(e.message)
         }
         break;
 
@@ -229,9 +266,8 @@ async function handleEvent(type, data, res) {
             }
             const order = new Order(data.order);
             await order.save();
-            res.send();
         } catch(e) {
-            res.send({ error: e.message });
+            console.log(e.message)
         }
         break;
 
@@ -256,19 +292,13 @@ async function handleEvent(type, data, res) {
                 user.monthlyEarnings += data.order.totalValue;
                 await user.save();
             }
-            res.send();
         } catch(e) {
-            res.send({ error: e.message });
+            console.log(e.message)
         }
         break;
 
     }
 }
-
-app.post('/events', (req, res) => {
-    const { type, data } = req.body;
-    handleEvent(type, data, res);
-})
 
 app.listen(serverPort, ()=>{
     console.log('Listening at port: ' + serverPort)

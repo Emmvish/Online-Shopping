@@ -1,4 +1,3 @@
-const axios = require('axios');
 const express = require('express');
 
 const auth = require('../middleware/auth')
@@ -6,7 +5,19 @@ const Product = require('../models/product')
 
 const router = new express.Router()
 
-const eventBusUrl = process.env.EVENT_BUS_URL || 'http://localhost:4001/events'
+const eventBusUrl = process.env.EVENT_BUS_URL || 'amqp://localhost'; 
+const connection = require('amqplib').connect(eventBusUrl);
+const productQueue = process.env.PRODUCT_QUEUE || 'Product';
+
+let productChannel;
+
+connection.then(function(conn) {
+    return conn.createChannel();
+}).then(function(ch) {
+    ch.assertQueue(productQueue).then(function(ok) {
+        productChannel = ch;
+    });
+}).catch(console.warn);
 
 router.post('/products/add', auth, async (req, res) => {
     if(req.user.role === 'seller') {
@@ -14,12 +25,10 @@ router.post('/products/add', auth, async (req, res) => {
             req.body.product.sellerId = req.user._id;   
             const product = new Product(req.body.product);
             await product.save();
-            axios.post(eventBusUrl, { type: 'ProductAdded', data: { token: req.token, product: { _id: product._id, name: product.name, price: product.price, quantity: product.quantity } } }).catch((err)=>{
-                console.log(err);
-            })
-            axios.post(eventBusUrl, { type: 'ModerateProduct', data: { token: req.token, product: { _id: product._id, name: product.name, status: 'pending' } } }).catch((err)=>{
-                console.log(err);
-            })
+            let event = { type: 'ProductAdded', data: { token: req.token, product: { _id: product._id, name: product.name, price: product.price, quantity: product.quantity } } }
+            productChannel.sendToQueue(productQueue, Buffer.from(JSON.stringify(event)));
+            event = { type: 'ModerateProduct', data: { token: req.token, product: { _id: product._id, name: product.name, status: 'pending' } } }
+            productChannel.sendToQueue(productQueue, Buffer.from(JSON.stringify(event)));
             res.status(201).send({ product });
         } catch(e) {
             res.status(503).send({ error: 'Unable to add the product right now!' })
@@ -37,9 +46,8 @@ router.delete('/products/delete', auth, async (req, res) => {
                 throw new Error('This product does NOT exist in the database!');
             }
             await product.remove();
-            axios.post(eventBusUrl, { type: 'ProductRemoved', data: { token: req.token, product: { _id: req.body.product._id } } }).catch((err)=>{
-                console.log(err);
-            })
+            const event = { type: 'ProductRemoved', data: { token: req.token, product: { _id: req.body.product._id } } }
+            productChannel.sendToQueue(productQueue, Buffer.from(JSON.stringify(event)));
             res.status(200).send({ product: { _id: req.body.product._id } });
         } catch(e) {
             res.status(404).send({ error: e.message })
@@ -70,13 +78,11 @@ router.patch('/products/edit', auth, async (req, res) => {
             }
             updates.forEach((update) => product[update] = req.body.product.updates[update])
             await product.save();
-            axios.post(eventBusUrl, { type: 'ProductEdited', data: { token: req.token, product: { _id: req.body.product._id, updates: req.body.product.updates } } }).catch((err)=>{
-                console.log(err);
-            })
+            const event = { type: 'ProductEdited', data: { token: req.token, product: { _id: req.body.product._id, updates: req.body.product.updates } } }
+            productChannel.sendToQueue(productQueue, Buffer.from(JSON.stringify(event)));
             if(updates.includes('name')) {
-                axios.post(eventBusUrl, { type: 'ModerateProduct', data: { token: req.token, product: { _id: product._id, name: product.name, status: 'pending' } } }).catch((err)=>{
-                    console.log(err);
-                })
+                const event = { type: 'ModerateProduct', data: { token: req.token, product: { _id: product._id, name: product.name, status: 'pending' } } }
+                productChannel.sendToQueue(productQueue, Buffer.from(JSON.stringify(event)));
             }
             res.status(200).send({ product: { _id: req.body.product._id } });
         } catch(e) {
@@ -91,6 +97,8 @@ router.patch('/products/edit', auth, async (req, res) => {
             if(req.body.product.updates.status && req.body.product.updates.status === 'rejected') {
                 product.status = req.body.product.updates.status;
                 await product.save();
+                const event = { type: 'ProductEdited', data: { token: req.token, product: { _id: req.body.product._id, updates: { status: product.status } } } }
+                productChannel.sendToQueue(productQueue, Buffer.from(JSON.stringify(event)));
                 res.status(200).send({ message: 'This product has now been rejected!' });
             } else {
                 throw new Error('Invalid updates!');
@@ -150,9 +158,8 @@ router.post('/products/rate', auth, async (req, res) => {
             product.rating = ((product.totalRatings*product.rating) + req.body.product.rating)/(product.totalRatings + 1);
             product.totalRatings++;
             await product.save();
-            axios.post(eventBusUrl, { type: 'ProductRated', data: { token: req.token, product: { _id: product._id, rating: product.rating } } }).catch((err)=>{
-                console.log(err);
-            })
+            const event = { type: 'ProductRated', data: { token: req.token, product: { _id: product._id, rating: product.rating } } }
+            productChannel.sendToQueue(productQueue, Buffer.from(JSON.stringify(event)));
             res.status(201).send({ product });
         } catch(e) {
             res.status(404).send({ error: e.message })

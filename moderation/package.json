@@ -10,7 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "axios": "^0.21.1",
+    "amqplib": "^0.8.0",
     "bad-words": "^3.0.4",
     "env-cmd": "^10.1.0",
     "express": "^4.17.1",

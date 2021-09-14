@@ -1,11 +1,68 @@
 const express = require('express')
 const jwt = require('jsonwebtoken')
-const axios = require('axios')
 
 require('./db/mongoose')
 const productRouter = require('./routers/product');
 const User = require('./models/user')
 const Product = require('./models/product')
+
+const eventBusUrl = process.env.EVENT_BUS_URL || 'amqp://localhost'
+const connection = require('amqplib').connect(eventBusUrl);
+const userQueue = process.env.USER_QUEUE || 'User';
+const productQueue = process.env.PRODUCT_QUEUE || 'Product';
+const orderQueue = process.env.ORDER_QUEUE || 'Order';
+
+connection.then(function(conn) {
+    return conn.createChannel();
+}).then(function(ch) {
+    ch.assertQueue(userQueue).then(function(ok) {
+        return ch.consume(userQueue, function(msg) {
+        if (msg !== null) {
+            const { type, data } = JSON.parse(msg.content.toString())
+            handleEvent(type, data);
+            ch.ack(msg);
+        }
+    });
+});  
+}).catch(console.warn);
+
+connection.then(function(conn) {
+    return conn.createChannel();
+}).then(function(ch) {
+    ch.assertQueue(productQueue).then(function(ok) {
+        return ch.consume(productQueue, function(msg) {
+        if (msg !== null) {
+            const { type, data } = JSON.parse(msg.content.toString())
+            handleEvent(type, data);
+            ch.ack(msg);
+        }
+    });
+});  
+}).catch(console.warn);
+
+connection.then(function(conn) {
+    return conn.createChannel();
+}).then(function(ch) {
+    ch.assertQueue(orderQueue).then(function(ok) {
+        return ch.consume(orderQueue, function(msg) {
+        if (msg !== null) {
+            const { type, data } = JSON.parse(msg.content.toString())
+            handleEvent(type, data);
+            ch.ack(msg);
+        }
+    });
+});  
+}).catch(console.warn);
+
+let productChannel;
+
+connection.then(function(conn) {
+    return conn.createChannel();
+}).then(function(ch) {
+    ch.assertQueue(productQueue).then(function(ok) {
+        productChannel = ch;
+    });
+}).catch(console.warn);
 
 const app = express();
 
@@ -15,9 +72,7 @@ app.use(express.json());
 
 app.use(productRouter);
 
-const eventBusUrl = process.env.EVENT_BUS_URL || 'http://localhost:4001/events'
-
-async function handleEvent(type, data, res) {
+async function handleEvent(type, data) {
 
     const jwtSecret = process.env.JWT_SECRET || 'Some-Secret-Key'
 
@@ -27,9 +82,8 @@ async function handleEvent(type, data, res) {
             const user = new User(data.user);
             try {
                 await user.save();
-                res.send();
             } catch(e) {
-                res.send({ error: e.message });
+                console.log(e.message)
             }
             break;
 
@@ -41,9 +95,8 @@ async function handleEvent(type, data, res) {
                 }
                 user.tokens = user.tokens.concat({ token: data.token });
                 await user.save();
-                res.send();
             } catch(e) {
-                res.send({ error: e.message });
+                console.log(e.message)
             }
             break;
 
@@ -57,12 +110,11 @@ async function handleEvent(type, data, res) {
                 if(data.user.role === 'admin' && adminUser.role === 'admin') {
                     const user = new User(data.user);
                     await user.save();
-                    res.send();
                 } else {
                     throw new Error('Error! Admin user was NOT created!')
                 }
             } catch(e) {
-                res.send({ error: e.message });
+                console.log(e.message)
             }
             break;
 
@@ -74,9 +126,8 @@ async function handleEvent(type, data, res) {
                     throw new Error('No such user exists!');
                 }
                 await user.remove();
-                res.send();
             } catch(e) {
-                res.send({ error: e.message });
+                console.log(e.message)
             }
             break;
 
@@ -92,9 +143,8 @@ async function handleEvent(type, data, res) {
                     throw new Error('This user does NOT exist!');
                 }
                 await userToRemove.remove();
-                res.send();
             } catch(e) {
-                res.send({ error: e.message });
+                console.log(e.message)
             }
             break;
 
@@ -116,9 +166,8 @@ async function handleEvent(type, data, res) {
                 }
                 updates.forEach((update) => user[update] = data.updates[update])
                 await user.save()
-                res.send();
             } catch(e) {
-                res.send({ error: e.message });
+                console.log(e.message)
             }
             break;
 
@@ -128,9 +177,8 @@ async function handleEvent(type, data, res) {
                 const user = await User.findOne({ _id: decoded._id, 'tokens.token': data.token })
                 user.tokens = user.tokens.filter((token) => token.token !== data.token);
                 await user.save();
-                res.send();
             } catch(e) {
-                res.send({ error: e.message });
+                console.log(e.message)
             }
             break;
 
@@ -147,12 +195,10 @@ async function handleEvent(type, data, res) {
                 }
                 product.status = data.product.status;
                 await product.save();
-                axios.post(eventBusUrl, { type: 'ProductEdited', data: { token: data.token, product: { _id: data.product._id, updates: { status: data.product.status } } } }).catch((err)=>{
-                    console.log(err);
-                })
-                res.send();
+                const event = { type: 'ProductEdited', data: { token: data.token, product: { _id: data.product._id, updates: { status: data.product.status } } } }
+                productChannel.sendToQueue(productQueue, Buffer.from(JSON.stringify(event)));
             } catch(e) {
-                res.send({ error: e.message });
+                console.log(e.message)
             }
             break;
 
@@ -169,12 +215,10 @@ async function handleEvent(type, data, res) {
                 }
                 product.quantity = product.quantity - data.product.quantity;
                 await product.save();
-                axios.post(eventBusUrl, { type: 'ProductEdited', data: { token: data.token, product: { _id: product._id, updates: { quantity: product.quantity } } } }).catch((err)=>{
-                    console.log(err);
-                })
-                res.send();
+                const event = { type: 'ProductEdited', data: { token: data.token, product: { _id: product._id, updates: { quantity: product.quantity } } } }
+                productChannel.sendToQueue(productQueue, Buffer.from(JSON.stringify(event)));
             } catch(e) {
-                res.send({ error: e.message });
+                console.log(e.message)
             }
             break;
 
@@ -191,22 +235,15 @@ async function handleEvent(type, data, res) {
                 }
                 product.quantity = product.quantity + data.product.updates.quantity;
                 await product.save();
-                axios.post(eventBusUrl, { type: 'ProductEdited', data: { token: data.token, product: { _id: product._id, updates: { quantity: product.quantity } } } }).catch((err)=>{
-                    console.log(err);
-                })
-                res.send();
+                const event = { type: 'ProductEdited', data: { token: data.token, product: { _id: product._id, updates: { quantity: product.quantity } } } }
+                productChannel.sendToQueue(productQueue, Buffer.from(JSON.stringify(event)));
             } catch(e) {
-                res.send({ error: e.message });
+                console.log(e.message)
             }
             break;
 
     }
 }
-
-app.post('/events', (req, res) => {
-    const { type, data } = req.body;
-    handleEvent(type, data, res);
-})
 
 app.listen(serverPort, ()=>{
     console.log('Listening at port: ' + serverPort)
