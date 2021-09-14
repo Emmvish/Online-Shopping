@@ -17,6 +17,7 @@ This application offers the following features to its users (site admins, retail
 12. Customers and Retailers to submit feedback about their experience with website, which site admins can view.
 13. Allow customers to submit their complaints regarding a product to its respective seller and site admins.
 14. Site Admins can moderate and hide objectionable products and users.
+15. The Event Bus that carries events to various microservices has been implemented using RabbitMQ message broker.
 
 Every microservice has been thoroughly tested using JEST unit testing framework. 
 
