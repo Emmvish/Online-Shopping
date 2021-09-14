@@ -1,7 +1,20 @@
-const axios = require('axios');
 const express = require('express');
 const nodemailer = require("nodemailer");
 const { v4: uuidv4 } = require('uuid');
+
+const eventBusUrl = process.env.EVENT_BUS_URL || 'amqp://localhost'; 
+const connection = require('amqplib').connect(eventBusUrl);
+const userQueue = process.env.USER_QUEUE || 'User';
+
+let userChannel;
+
+connection.then(function(conn) {
+    return conn.createChannel();
+}).then(function(ch) {
+    ch.assertQueue(userQueue).then(function(ok) {
+        userChannel = ch;
+    });
+}).catch(console.warn);
 
 const myEmail = "mvtinder98@gmail.com"
 const myEmailPassword = process.env.EMAIL_PASSWORD || '********'
@@ -21,8 +34,6 @@ const message = {
 	text: ""
 };
 
-const eventBusUrl = process.env.EVENT_BUS_URL || 'http://localhost:4001/events'
-
 const User = require('../models/user')
 const auth = require('../middleware/auth')
 const authAdmin = require('../middleware/authAdmin')
@@ -33,13 +44,11 @@ async function registerUser (req, res, admin) {
     try {
         await user.save();
         if(!admin) {
-            axios.post(eventBusUrl, { type: 'UserAdded', data: { user: user.toJSON() } }).catch((err)=>{
-                console.log(err);
-            })
+            const event = { type: 'UserAdded', data: { user: user.toJSON() } }
+            userChannel.sendToQueue(userQueue, Buffer.from(JSON.stringify(event)));
         } else {
-            axios.post(eventBusUrl, { type: 'AdminAdded', data: { user: user.toJSON(), token: req.token } }).catch((err)=>{
-                console.log(err);
-            })
+            const event = { type: 'AdminAdded', data: { user: user.toJSON(), token: req.token } }
+            userChannel.sendToQueue(userQueue, Buffer.from(JSON.stringify(event)));
         }
         res.status(201).send({ user });
     } catch (e) {
@@ -70,9 +79,8 @@ router.post('/users/auth', async (req, res) => {
             throw new Error('User was not found!')
         }
         const token = await user.generateAuthToken()
-        axios.post(eventBusUrl, { type: 'UserLoggedIn', data: { user: user.toJSON(), token } }).catch((err)=>{
-            console.log(err);
-        })
+        const event = { type: 'UserLoggedIn', data: { user: user.toJSON(), token } }
+        userChannel.sendToQueue(userQueue, Buffer.from(JSON.stringify(event)));
         res.status(200).send({ user, token })
     } catch (e) {
         res.status(401).send({ error: e.message })
@@ -110,9 +118,8 @@ router.post('/users/logout', auth, async (req, res) => {
             return token.token !== req.token
         })
         await req.user.save()
-        axios.post(eventBusUrl, { type: 'UserLoggedOut', data: { user: req.user.toJSON(), token: req.token } }).catch((err)=>{
-            console.log(err);
-        })
+        const event = { type: 'UserLoggedOut', data: { user: req.user.toJSON(), token: req.token } }
+        userChannel.sendToQueue(userQueue, Buffer.from(JSON.stringify(event)));
         res.status(200).send()
     } catch (e) {
         res.status(500).send()
@@ -147,9 +154,8 @@ async function editAccount(req, res) {
     try {
         updates.forEach((update) => req.user[update] = req.body[update])
         await req.user.save()
-        axios.post(eventBusUrl, { type: 'UserEdited', data: { updates: req.body, token: req.token } }).catch((err)=>{
-            console.log(err);
-        })
+        const event = { type: 'UserEdited', data: { updates: req.body, token: req.token } }
+        userChannel.sendToQueue(userQueue, Buffer.from(JSON.stringify(event)));
         res.status(201).send({ user: req.user })
     } catch (e) {
         res.status(503).send({ error: 'Update could not be applied!' })
@@ -160,22 +166,16 @@ router.patch('/users/edit', auth, async (req, res) => {
     await editAccount(req, res);
 })
 
-// router.post('/users/adminedit', authAdmin, async (req, res) => {
-//     await editAccount(req, res);
-// })
-
 async function deleteAccount (req, res, admin) {
     try {
         const userToDelete = req.user.toJSON();
         await req.user.remove();
         if(!admin) {
-            axios.post(eventBusUrl, { type: 'UserRemoved', data: { user: userToDelete, token: req.token } }).catch((err)=>{
-                console.log(err);
-            })
+            const event = { type: 'UserRemoved', data: { user: userToDelete, token: req.token } }
+            userChannel.sendToQueue(userQueue, Buffer.from(JSON.stringify(event)));
         } else {
-            axios.post(eventBusUrl, { type: 'AdminRemovedUser', data: { user: userToDelete, token: req.token } }).catch((err)=>{
-                console.log(err);
-            })
+            const event = { type: 'AdminRemovedUser', data: { user: userToDelete, token: req.token } }
+            userChannel.sendToQueue(userQueue, Buffer.from(JSON.stringify(event)));
         }
         res.status(201).send(userToDelete);
     } catch (e) {

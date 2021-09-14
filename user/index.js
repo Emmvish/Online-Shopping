@@ -11,11 +11,6 @@ app.use(express.json());
 
 app.use(userRouter);
 
-app.post('/events', (req, res)=>{
-    console.log('Event: ' + req.body);
-    res.send();
-})
-
 app.listen(serverPort, ()=>{
     console.log('Listening at port: ' + serverPort)
 })
