@@ -1,7 +1,8 @@
 const mongoose = require('mongoose')
 
 const dbPort = process.env.MONGODB_PORT || 27017;
-const dbUrl = "mongodb://127.0.0.1:" + dbPort + "/order";
+const dbHost = process.env.MONGODB_HOST || "mongodb://127.0.0.1"
+const dbUrl = dbHost + ":" + dbPort + "/order";
 
 mongoose.connect(dbUrl, {
     useNewUrlParser: true,
