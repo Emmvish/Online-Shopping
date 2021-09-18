@@ -126,11 +126,11 @@ router.post('/users/logout', auth, async (req, res) => {
     }
 })
 
-router.get('/users/me', auth, async (req, res) => {
+router.get('/users/me', auth, (req, res) => {
     res.status(200).send({ user: req.user.toJSON() })
 })
 
-router.get('/users/person', authAdmin, async (req, res) => {
+router.get('/users/person', authAdmin, (req, res) => {
     res.status(200).send({ user: req.user.toJSON() })
 })
 
