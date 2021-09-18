@@ -16,7 +16,7 @@ connection.then(function(conn) {
     });
 }).catch(console.warn);
 
-const myEmail = "mvtinder98@gmail.com"
+const myEmail = process.env.EMAIL || "mvtinder98@gmail.com"
 const myEmailPassword = process.env.EMAIL_PASSWORD || '********'
 
 const transport = nodemailer.createTransport({
