@@ -46,7 +46,7 @@ pipeline {
 //         stage('Test') {
 //             steps {
 //                 sh 'cd research && docker build -f Dockerfile.dev -t emmvish/research-test:latest .'
-//                 sh 'docker run -d --name research-test emmvish/research-test:latest '
+//                 sh 'docker run -d --name research-test -p ${MONGODB_PORT}:${MONGODB_PORT} emmvish/research-test:latest '
 //             }
 //         }
 //         stage('Deploy') {
@@ -83,7 +83,7 @@ pipeline {
 // 			           filename 'Dockerfile.dev'
 //                     dir 'research'
 //                     label 'linux'
-//                     args '-d --name research-test'
+//                     args '-d --name research-test -p ${MONGODB_PORT}:${MONGODB_PORT}'
 // 		        }
 //             }
 //             steps {
