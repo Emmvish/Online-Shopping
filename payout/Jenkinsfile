@@ -46,7 +46,7 @@ pipeline {
 //         stage('Test') {
 //             steps {
 //                 sh 'cd payout && docker build -f Dockerfile.dev -t emmvish/payout-test:latest .'
-//                 sh 'docker run -d --name payout-test emmvish/payout-test:latest '
+//                 sh 'docker run -d --name payout-test -p ${MONGODB_PORT}:${MONGODB_PORT} emmvish/payout-test:latest '
 //             }
 //         }
 //         stage('Deploy') {
@@ -83,7 +83,7 @@ pipeline {
 // 			           filename 'Dockerfile.dev'
 //                     dir 'payout'
 //                     label 'linux'
-//                     args '-d --name payout-test'
+//                     args '-d --name payout-test -p ${MONGODB_PORT}:${MONGODB_PORT}'
 // 		        }
 //             }
 //             steps {
