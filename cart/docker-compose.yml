@@ -13,3 +13,5 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.dev
+    ports:
+      - "${MONGODB_PORT}:${MONGODB_PORT}"
