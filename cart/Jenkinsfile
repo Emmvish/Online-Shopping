@@ -46,7 +46,7 @@ pipeline {
 //         stage('Test') {
 //             steps {
 //                 sh 'cd cart && docker build -f Dockerfile.dev -t emmvish/cart-test:latest .'
-//                 sh 'docker run -d --name -p ${MONGODB_PORT}:${MONGODB_PORT} cart-test emmvish/cart-test:latest '
+//                 sh 'docker run -d --name cart-test -p ${MONGODB_PORT}:${MONGODB_PORT} emmvish/cart-test:latest '
 //             }
 //         }
 //         stage('Deploy') {
@@ -83,7 +83,7 @@ pipeline {
 // 			           filename 'Dockerfile.dev'
 //                     dir 'cart'
 //                     label 'linux'
-//                     args '-d --name -p ${MONGODB_PORT}:${MONGODB_PORT} cart-test'
+//                     args '-d -p ${MONGODB_PORT}:${MONGODB_PORT} --name cart-test'
 // 		        }
 //             }
 //             steps {
