@@ -15,3 +15,5 @@ services:
       dockerfile: Dockerfile.dev
     ports:
       - "${MONGODB_PORT}:${MONGODB_PORT}"
+    env_file:
+      - ./config/config.env
