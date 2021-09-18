@@ -46,7 +46,7 @@ pipeline {
 //         stage('Test') {
 //             steps {
 //                 sh 'cd moderation && docker build -f Dockerfile.dev -t emmvish/moderation-test:latest .'
-//                 sh 'docker run -d --name moderation-test emmvish/moderation-test:latest '
+//                 sh 'docker run -d --name moderation-test -p ${MONGODB_PORT}:${MONGODB_PORT} emmvish/moderation-test:latest '
 //             }
 //         }
 //         stage('Deploy') {
@@ -83,7 +83,7 @@ pipeline {
 // 			           filename 'Dockerfile.dev'
 //                     dir 'moderation'
 //                     label 'linux'
-//                     args '-d --name moderation-test'
+//                     args '-d --name moderation-test -p ${MONGODB_PORT}:${MONGODB_PORT}'
 // 		        }
 //             }
 //             steps {
