@@ -46,7 +46,7 @@ pipeline {
 //         stage('Test') {
 //             steps {
 //                 sh 'cd coupons && docker build -f Dockerfile.dev -t emmvish/coupons-test:latest .'
-//                 sh 'docker run -d --name coupons-test emmvish/coupons-test:latest '
+//                 sh 'docker run -d --name coupons-test -p ${MONGODB_PORT}:${MONGODB_PORT} emmvish/coupons-test:latest '
 //             }
 //         }
 //         stage('Deploy') {
@@ -83,7 +83,7 @@ pipeline {
 // 			           filename 'Dockerfile.dev'
 //                     dir 'coupons'
 //                     label 'linux'
-//                     args '-d --name coupons-test'
+//                     args '-d --name coupons-test -p ${MONGODB_PORT}:${MONGODB_PORT}'
 // 		        }
 //             }
 //             steps {
