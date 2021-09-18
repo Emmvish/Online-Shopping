@@ -46,7 +46,7 @@ pipeline {
 //         stage('Test') {
 //             steps {
 //                 sh 'cd feedback && docker build -f Dockerfile.dev -t emmvish/feedback-test:latest .'
-//                 sh 'docker run -d --name feedback-test emmvish/feedback-test:latest '
+//                 sh 'docker run -d --name feedback-test -p ${MONGODB_PORT}:${MONGODB_PORT} emmvish/feedback-test:latest '
 //             }
 //         }
 //         stage('Deploy') {
@@ -83,7 +83,7 @@ pipeline {
 // 			           filename 'Dockerfile.dev'
 //                     dir 'feedback'
 //                     label 'linux'
-//                     args '-d --name feedback-test'
+//                     args '-d --name feedback-test -p ${MONGODB_PORT}:${MONGODB_PORT}'
 // 		        }
 //             }
 //             steps {
