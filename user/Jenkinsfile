@@ -46,7 +46,7 @@ pipeline {
 //         stage('Test') {
 //             steps {
 //                 sh 'cd user && docker build -f Dockerfile.dev -t emmvish/user-test:latest .'
-//                 sh 'docker run -d --name user-test emmvish/user-test:latest '
+//                 sh 'docker run -d --name user-test -p ${MONGODB_PORT}:${MONGODB_PORT} emmvish/user-test:latest '
 //             }
 //         }
 //         stage('Deploy') {
@@ -83,7 +83,7 @@ pipeline {
 // 			           filename 'Dockerfile.dev'
 //                     dir 'user'
 //                     label 'linux'
-//                     args '-d --name user-test'
+//                     args '-d --name user-test -p ${MONGODB_PORT}:${MONGODB_PORT}'
 // 		        }
 //             }
 //             steps {
