@@ -26,8 +26,8 @@ router.get('/search/users', auth, async (req, res) => {
                 }
                 res.status(200).send({ users, totalResults: results.length });
             } else {
-                const offset = (req.query.pageNo - 1)*req.query.limit;
                 const limit = req.query.limit ? parseInt(req.query.limit) : 10;
+                const offset = (req.query.pageNo - 1)*limit;
                 let users;
                 if(req.user.role === 'admin') {
                 users = await User.find({ name: { $regex: req.query.searchTerm, $options: 'i' } }, { name: 1, role: 1, address: 1, email: 1 })
@@ -69,8 +69,8 @@ router.get('/search/products', auth, async (req, res) => {
                 }
                 res.status(200).send({ products, totalResults: results.length });
             } else {
-                const offset = (req.query.pageNo - 1)*req.query.limit;
                 const limit = req.query.limit ? parseInt(req.query.limit) : 10;
+                const offset = (req.query.pageNo - 1)*limit;
                 let products;
                 if(req.user.role === 'admin') {
                     products = await Product.find({ name: { $regex: req.query.searchTerm, $options: 'i' } })
@@ -107,8 +107,8 @@ router.get('/search/sellerProducts', auth, async (req, res)=>{
                 }
                 res.status(200).send({ products, totalResults: results.length });
             } else {
-                const offset = (req.query.pageNo - 1)*req.query.limit;
                 const limit = req.query.limit ? parseInt(req.query.limit) : 10;
+                const offset = (req.query.pageNo - 1)*limit;
                 const products = await Product.find({ sellerId: req.query.sellerId, status: 'approved', quantity: { $gt: 0 } })
                                               .sort({ createdAt: -1 })
                                               .skip(offset)
