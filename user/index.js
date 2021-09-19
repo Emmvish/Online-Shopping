@@ -14,5 +14,3 @@ app.use(userRouter);
 app.listen(serverPort, ()=>{
     console.log('Listening at port: ' + serverPort)
 })
-
-module.exports = app;
