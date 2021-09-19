@@ -344,5 +344,3 @@ async function handleEvent(type, data) {
 app.listen(serverPort, ()=>{
     console.log('Listening at port: ' + serverPort)
 })
-
-module.exports = app;
