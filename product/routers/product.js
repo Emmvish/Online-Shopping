@@ -132,8 +132,8 @@ router.get('/products', auth, async (req, res) => {
                 }
                 res.status(201).send({ products, totalResults: results.length });
             } else {
-                const offset = (req.query.pageNo - 1)*req.query.limit;
                 const limit = req.query.limit ? parseInt(req.query.limit) : 10;
+                const offset = (req.query.pageNo - 1)*limit;
                 const products = await Product.find({ sellerId })
                                               .sort({ createdAt: -1 })
                                               .skip(offset)
