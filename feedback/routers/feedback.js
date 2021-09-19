@@ -37,8 +37,8 @@ router.get('/feedback/list', auth, async (req, res) => {
                 }
                 res.status(200).send({ feedbacks: results, totalResults: feedbackList.length });
             } else {
-                const offset = (req.query.pageNo - 1)*req.query.limit;
                 const limit = req.query.limit ? parseInt(req.query.limit) : 10;
+                const offset = (req.query.pageNo - 1)*limit;
                 const feedbackList = await Feedback.find({ })
                                                    .sort({ createdAt: -1 })
                                                    .skip(offset)
@@ -87,8 +87,8 @@ router.get('/feedback/complaints', auth, async (req, res) => {
                 }
                 res.status(200).send({ complaints: results, totalResults: productList.length });
             } else {
-                const offset = (req.query.pageNo - 1)*req.query.limit;
                 const limit = req.query.limit ? parseInt(req.query.limit) : 10;
+                const offset = (req.query.pageNo - 1)*limit;
                 let productList = await Product.find({ sellerId })
                                                    .sort({ createdAt: -1 })
                                                    .skip(offset)
