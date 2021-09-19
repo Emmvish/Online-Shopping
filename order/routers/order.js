@@ -216,7 +216,7 @@ router.get('/order/all', auth, async (req, res) => {
                 res.status(200).send({ orders: actualList, totalResults: results.length });
             } else {
                 const limit = req.query.limit ? parseInt(req.query.limit) : 10;
-                const offset = (req.query.pageNo - 1)*req.query.limit;
+                const offset = (req.query.pageNo - 1)*limit;
                 const orders = await Order.find(orderSearchObject)
                                           .sort({ createdAt: -1 })
                                           .skip(offset)
