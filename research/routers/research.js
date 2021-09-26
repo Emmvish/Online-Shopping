@@ -58,7 +58,7 @@ router.get('/search/products', auth, async (req, res) => {
                 if(req.user.role === 'admin') {
                     results = await Product.find({ name: { $regex: req.query.searchTerm, $options: 'i' } }).sort({ createdAt: -1 });
                 } else {
-                    results = await Product.find({ name: { $regex: req.query.searchTerm, $options: 'i' }, status: 'approved', quantity: { $gt: 0 } }).sort({ createdAt: -1 });
+                    results = await Product.find({ name: { $regex: req.query.searchTerm, $options: 'i' }, status: 'approved', quantity: { $gt: 0 } }).sort({ rating: -1 });
                 }
                 const products = [];
                 const limit = req.query.limit ? parseInt(req.query.limit) : 10;
@@ -78,7 +78,7 @@ router.get('/search/products', auth, async (req, res) => {
                     .skip(offset)
                     .limit(limit);
                 } else {
-                    products = await Product.find({ name: { $regex: req.query.searchTerm, $options: 'i' }, status: 'approved', quantity: { $gt: 0 } }).sort({ createdAt: -1 })
+                    products = await Product.find({ name: { $regex: req.query.searchTerm, $options: 'i' }, status: 'approved', quantity: { $gt: 0 } }).sort({ rating: -1 })
                                                                .find({ status: 'approved', quantity: { $gt: 0 } }).skip(offset)
                                                                    .limit(limit)
                 }
