@@ -83,22 +83,6 @@ test('Should signup a new admin from admin account if using /registeradmin route
     expect(user.password).not.toBe('whateverlol')
 })
 
-test('Should login existing user', async () => {
-    const response = await request(app).post('/users/auth').send({
-        name: userOne.name,
-        password: userOne.password
-    }).expect(200)
-    const user = await User.findById(userOneId)
-    expect(response.body.token).toBe(user.tokens[1].token)
-})
-
-test('Should not login nonexistent user', async () => {
-    const response = await request(app).post('/users/login').send({
-        name: userOne.name,
-        password: 'adifferentpassword'
-    }).expect(404)
-})
-
 test('Should get profile of any user as an admin', async () => {
     const response = await request(app)
         .get('/users/person')
@@ -190,16 +174,6 @@ test('Should not update invalid user fields', async () => {
         .send({
             location: 'Australia'
         }).expect(400)
-})
-
-test('Should log out the user', async () => {
-    await request(app)
-        .post('/users/logout')
-        .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
-        .send()
-        .expect(200)
-    const user = await User.findById(userOneId);
-    expect(user.tokens.length).toBe(0)
 })
 
 test('Should allow user to change password via /forgotpassword route', async () => {

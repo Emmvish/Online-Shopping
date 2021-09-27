@@ -7,5 +7,6 @@ const dbUrl = dbHost + ":" + dbPort + "/users";
 mongoose.connect(dbUrl, {
     useNewUrlParser: true,
     useCreateIndex: true,
-    useFindAndModify: false
+    useFindAndModify: false,
+    useUnifiedTopology: true
 })

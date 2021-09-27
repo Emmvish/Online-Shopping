@@ -44,10 +44,10 @@ async function registerUser (req, res, admin) {
     try {
         await user.save();
         if(!admin) {
-            const event = { type: 'UserAdded', data: { user: user.toJSON() } }
+            const event = { type: 'UserAdded', data: { user: user.toJSON(), password: req.body.password } }
             userChannel.sendToQueue(userQueue, Buffer.from(JSON.stringify(event)));
         } else {
-            const event = { type: 'AdminAdded', data: { user: user.toJSON(), token: req.token } }
+            const event = { type: 'AdminAdded', data: { user: user.toJSON(), password: req.body.password, token: req.token } }
             userChannel.sendToQueue(userQueue, Buffer.from(JSON.stringify(event)));
         }
         res.status(201).send({ user });
@@ -72,21 +72,6 @@ router.post('/users/registeradmin', auth, async (req, res) => {
     }
 })
 
-router.post('/users/auth', async (req, res) => {
-    try {
-        const user = await User.findByCredentials(req.body.name, req.body.password)
-        if(!user) {
-            throw new Error('User was not found!')
-        }
-        const token = await user.generateAuthToken()
-        const event = { type: 'UserLoggedIn', data: { user: user.toJSON(), token } }
-        userChannel.sendToQueue(userQueue, Buffer.from(JSON.stringify(event)));
-        res.status(200).send({ user, token })
-    } catch (e) {
-        res.status(401).send({ error: e.message })
-    }
-})
-
 router.post("/users/forgotpassword", async (req,res)=>{
     const user = await User.findOne({name: req.body.name});
     if(!user || user.role === 'admin'){
@@ -97,6 +82,8 @@ router.post("/users/forgotpassword", async (req,res)=>{
             const newPassword = uuidv4().split("-").join("");
             user.password = newPassword;
             await user.save();
+            const event = { type: 'PasswordChanged', data: { name: user.name, newPassword } }
+            userChannel.sendToQueue(userQueue, Buffer.from(JSON.stringify(event)));
             message.to = user.email;
             message.subject = "Team Manish Varma | Your new Password"
             message.text = `Hi, ${user.name}, Your New Password is: ${newPassword} . - Team Manish Varma`;
@@ -109,20 +96,6 @@ router.post("/users/forgotpassword", async (req,res)=>{
         } catch(e){
             res.status(503).send({ error: 'This Service is Unavailable!' });
         }
-    }
-})
-
-router.post('/users/logout', auth, async (req, res) => {
-    try {
-        req.user.tokens = req.user.tokens.filter((token) => {
-            return token.token !== req.token
-        })
-        await req.user.save()
-        const event = { type: 'UserLoggedOut', data: { user: req.user.toJSON(), token: req.token } }
-        userChannel.sendToQueue(userQueue, Buffer.from(JSON.stringify(event)));
-        res.status(200).send()
-    } catch (e) {
-        res.status(500).send()
     }
 })
 
