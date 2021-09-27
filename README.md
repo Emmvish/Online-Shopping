@@ -18,6 +18,8 @@ This application offers the following features to its users (site admins, retail
 13. Allow customers to submit their complaints regarding a product to its respective seller and site admins.
 14. Site Admins can moderate and hide objectionable products and users.
 15. The Event Bus that carries events to various microservices has been implemented using RabbitMQ message broker.
+16. Uses a 'Discovery' microservice to allow front end to establish contact with any other microservice in the system.
+17. Also provides 'Authentication' microservice to allow a person to generate JWTs (i.e., Login) or to remove their JWT (i.e., Logout).
 
 Every microservice has been thoroughly tested using JEST unit testing framework. 
 
