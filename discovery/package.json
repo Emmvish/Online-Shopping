@@ -1,0 +1,16 @@
+{
+  "name": "discovery",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "env-cmd -f ./config/config.env node index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.21.4",
+    "env-cmd": "^10.1.0",
+    "express": "^4.17.1"
+  }
+}

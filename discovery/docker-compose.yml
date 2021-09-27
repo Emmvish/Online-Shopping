@@ -1,0 +1,10 @@
+version: '3'
+services: 
+  production-discovery:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${PORT}:${PORT}"
+    env_file:
+      - ./config/config.env

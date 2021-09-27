@@ -1,0 +1,109 @@
+// DOCKER COMPOSE METHOD
+
+pipeline {
+    agent { label 'linux' }
+    stages {      
+        stage('Cleanup') {
+            steps {
+                sh 'docker-compose stop production-authentication development-authentication'
+                sh 'docker-compose rm production-authentication development-authentication'
+                sh 'rm -r *'
+            }
+        }
+        stage('Clone') {
+            steps {
+                sh 'git clone https://github.com/Emmvish/Online-Shopping.git .'
+                sh "find . -mindepth 1  ! -regex '^./authentication\(/.*\)?' -delete"
+            }
+        }
+        stage('Test & Deploy') {
+            steps {
+                sh 'cd authentication && docker-compose up --detach --build production-authentication development-authentication'
+            }
+        }
+    }
+} 
+
+
+// PURE DOCKER CLIENT METHOD
+
+// pipeline {
+//     agent { label 'linux' }
+//     stages {      
+//         stage('Cleanup') {
+//             steps {
+//                 sh 'docker stop authentication authentication-test'
+//                 sh 'docker rm authentication authentication-test'
+//                 sh 'rm -r *'
+//             }
+//         }
+//         stage('Clone') {
+//             steps {
+//                 sh 'git clone https://github.com/Emmvish/Online-Shopping.git .'
+//                 sh "find . -mindepth 1  ! -regex '^./authentication\(/.*\)?' -delete"
+//             }
+//         }
+//         stage('Test') {
+//             steps {
+//                 sh 'cd authentication && docker build -f Dockerfile.dev -t emmvish/authentication-test:latest .'
+//                 sh 'docker run -d --name authentication-test -p ${MONGODB_PORT}:${MONGODB_PORT} emmvish/authentication-test:latest '
+//             }
+//         }
+//         stage('Deploy') {
+//             steps {
+//                 sh 'cd authentication && docker build -t emmvish/authentication:latest .'
+//                 sh 'docker run -d --env-file=config/config.env -p ${PORT}:${PORT} -p ${MONGODB_PORT}:${MONGODB_PORT} --name authentication emmvish/authentication:latest'
+//             }
+//         }
+//     }
+// } 
+
+
+// JENKINS-DOCKER PLUGIN METHOD
+
+// pipeline {
+//     agent { label 'linux' }
+//     stages {      
+//         stage('Cleanup') {
+//             steps {
+//                 sh 'docker stop authentication authentication-test'
+//                 sh 'docker rm authentication authentication-test'
+//                 sh 'rm -r *'
+//             }
+//         }
+//         stage('Clone') {
+//             steps {
+//                 sh 'git clone https://github.com/Emmvish/Online-Shopping.git .'
+//                 sh "find . -mindepth 1  ! -regex '^./authentication\(/.*\)?' -delete"
+//             }
+//         }
+//         stage('Test') {
+//             agent {
+//                 dockerfile { 
+// 			           filename 'Dockerfile.dev'
+//                     dir 'authentication'
+//                     label 'linux'
+//                     args '-d --name authentication-test -p ${MONGODB_PORT}:${MONGODB_PORT}'
+// 		        }
+//             }
+//             steps {
+//                 sh 'node -v'
+//                 sh 'npm -v'
+//             }
+//         }
+//         stage('Deploy') {
+//             agent {
+//                 dockerfile { 
+// 			           filename 'Dockerfile'
+//                     dir 'authentication'
+//                     label 'linux'
+//                     args '-d --env-file=config/config.env -p ${PORT}:${PORT} -p ${MONGODB_PORT}:${MONGODB_PORT} --name authentication'
+// 		        }
+//             }
+//             steps {
+//                 sh 'node -v'
+//                 sh 'npm -v'
+//             }
+//         }
+//     }
+// } 

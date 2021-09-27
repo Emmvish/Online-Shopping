@@ -1,0 +1,89 @@
+// DOCKER COMPOSE METHOD
+
+pipeline {
+    agent { label 'linux' }
+    stages {      
+        stage('Cleanup') {
+            steps {
+                sh 'docker-compose stop production-discovery'
+                sh 'docker-compose rm production-discovery'
+                sh 'rm -r *'
+            }
+        }
+        stage('Clone') {
+            steps {
+                sh 'git clone https://github.com/Emmvish/Online-Shopping.git .'
+                sh "find . -mindepth 1  ! -regex '^./discovery\(/.*\)?' -delete"
+            }
+        }
+        stage('Test & Deploy') {
+            steps {
+                sh 'cd discovery && docker-compose up --detach --build production-discovery'
+            }
+        }
+    }
+} 
+
+
+// PURE DOCKER CLIENT METHOD
+
+// pipeline {
+//     agent { label 'linux' }
+//     stages {      
+//         stage('Cleanup') {
+//             steps {
+//                 sh 'docker stop discovery'
+//                 sh 'docker rm discovery'
+//                 sh 'rm -r *'
+//             }
+//         }
+//         stage('Clone') {
+//             steps {
+//                 sh 'git clone https://github.com/Emmvish/Online-Shopping.git .'
+//                 sh "find . -mindepth 1  ! -regex '^./discovery\(/.*\)?' -delete"
+//             }
+//         }
+//         stage('Deploy') {
+//             steps {
+//                 sh 'cd discovery && docker build -t emmvish/discovery:latest .'
+//                 sh 'docker run -d --env-file=config/config.env -p ${PORT}:${PORT} --name discovery emmvish/discovery:latest'
+//             }
+//         }
+//     }
+// } 
+
+
+// JENKINS-DOCKER PLUGIN METHOD
+
+// pipeline {
+//     agent { label 'linux' }
+//     stages {      
+//         stage('Cleanup') {
+//             steps {
+//                 sh 'docker stop discovery'
+//                 sh 'docker rm discovery'
+//                 sh 'rm -r *'
+//             }
+//         }
+//         stage('Clone') {
+//             steps {
+//                 sh 'git clone https://github.com/Emmvish/Online-Shopping.git .'
+//                 sh "find . -mindepth 1  ! -regex '^./discovery\(/.*\)?' -delete"
+//             }
+//         }
+//         stage('Deploy') {
+//             agent {
+//                 dockerfile { 
+// 			           filename 'Dockerfile'
+//                     dir 'discovery'
+//                     label 'linux'
+//                     args '-d --env-file=config/config.env -p ${PORT}:${PORT} --name discovery'
+// 		        }
+//             }
+//             steps {
+//                 sh 'node -v'
+//                 sh 'npm -v'
+//             }
+//         }
+//     }
+// } 

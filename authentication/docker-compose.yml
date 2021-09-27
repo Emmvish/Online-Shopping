@@ -1,0 +1,19 @@
+version: '3'
+services: 
+  production-authentication:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${PORT}:${PORT}"
+      - "${MONGODB_PORT}:${MONGODB_PORT}"
+    env_file:
+      - ./config/config.env
+  development-authentication:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "${MONGODB_PORT}:${MONGODB_PORT}"
+    env_file:
+      - ./config/config.env
