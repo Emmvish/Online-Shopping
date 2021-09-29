@@ -17,13 +17,8 @@ router.get('/search/users', auth, async (req, res) => {
                 } else {
                     results = await User.find({ name: { $regex: req.query.searchTerm, $options: 'i' }, role: 'seller' }, { name: 1, role: 1, address: 1, email: 1 }).sort({ createdAt: -1 })
                 }
-                const users = [];
                 const limit = req.query.limit ? parseInt(req.query.limit) : 10;
-                for( let i = 0; i < limit; i++ ) {
-                    if(results[i]) {
-                        users.push(results[i]);
-                    }
-                }
+                const users = results.slice(0, limit);
                 res.status(200).send({ users, totalResults: results.length });
             } else {
                 const limit = req.query.limit ? parseInt(req.query.limit) : 10;
@@ -60,13 +55,8 @@ router.get('/search/products', auth, async (req, res) => {
                 } else {
                     results = await Product.find({ name: { $regex: req.query.searchTerm, $options: 'i' }, status: 'approved', quantity: { $gt: 0 } }).sort({ rating: -1 });
                 }
-                const products = [];
                 const limit = req.query.limit ? parseInt(req.query.limit) : 10;
-                for( let i = 0; i < limit; i++ ) {
-                    if(results[i]) {
-                        products.push(results[i]);
-                    }
-                }
+                const products = results.slice(0, limit);
                 res.status(200).send({ products, totalResults: results.length });
             } else {
                 const limit = req.query.limit ? parseInt(req.query.limit) : 10;
@@ -98,13 +88,8 @@ router.get('/search/sellerProducts', auth, async (req, res)=>{
         try {
             if(req.query.firstSearch === 'true') {
                 const results = await Product.find({ sellerId: req.query.sellerId, status: 'approved', quantity: { $gt: 0 } }).sort({ createdAt: -1 });
-                const products = [];
                 const limit = req.query.limit ? parseInt(req.query.limit) : 10;
-                for( let i = 0; i < limit; i++ ) {
-                    if(results[i]) {
-                        products.push(results[i]);
-                    }
-                }
+                const products = results.slice(0, limit);
                 res.status(200).send({ products, totalResults: results.length });
             } else {
                 const limit = req.query.limit ? parseInt(req.query.limit) : 10;
