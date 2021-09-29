@@ -165,14 +165,7 @@ router.get('/order/all', auth, async (req, res) => {
                 const limit = req.query.limit ? parseInt(req.query.limit) : 10;
                 const results = joinProductsWithOrders(products, orders);
                 const finalResults = await joinResultsWithCustomers(results);
-                const actualList = [];
-                for( let i = 0; i < limit; i++ ) {
-                    if(finalResults[i]) {
-                        actualList.push(finalResults[i]);
-                    } else {
-                        break;
-                    }
-                }
+                const actualList = finalResults.slice(0, limit);
                 res.status(200).send({ orders: actualList, totalResults: finalResults.length });
             } else {
                 const limit = req.query.limit ? parseInt(req.query.limit) : 10;
@@ -205,14 +198,7 @@ router.get('/order/all', auth, async (req, res) => {
                 const limit = req.query.limit ? parseInt(req.query.limit) : 10;
                 const results = joinProductsWithOrders(products, orders);
                 const finalResults = await joinResultsWithSellers(results);
-                const actualList = [];
-                for( let i = 0; i < limit; i++ ) {
-                    if(finalResults[i]) {
-                        actualList.push(finalResults[i]);
-                    } else {
-                        break;
-                    }
-                }
+                const actualList = finalResults.slice(0, limit);
                 res.status(200).send({ orders: actualList, totalResults: results.length });
             } else {
                 const limit = req.query.limit ? parseInt(req.query.limit) : 10;
