@@ -29,12 +29,7 @@ router.get('/feedback/list', auth, async (req, res) => {
             if(req.query.firstSearch === 'true') {
                 const limit = req.query.limit ? parseInt(req.query.limit) : 10;
                 const feedbackList = await Feedback.find({ }).sort({ createdAt: -1 });
-                const results = [];
-                for( i = 0; i < limit; i++ ) {
-                    if(feedbackList[i]) {
-                        results.push(feedbackList[i]);
-                    }
-                }
+                const results = feedbackList.slice(0, limit);
                 res.status(200).send({ feedbacks: results, totalResults: feedbackList.length });
             } else {
                 const limit = req.query.limit ? parseInt(req.query.limit) : 10;
@@ -79,22 +74,16 @@ router.get('/feedback/complaints', auth, async (req, res) => {
             if(req.query.firstSearch === 'true') {
                 const limit = req.query.limit ? parseInt(req.query.limit) : 10;
                 let productList = await Product.find({ sellerId }).sort({ createdAt: -1 })
-                const results = [];
-                for( i = 0; i < limit; i++ ) {
-                    if(productList[i] && productList[i].complaints.length > 0) {
-                        results.push(productList[i]);
-                    }
-                }
+                productList = productList.filter((product) => product.complaints.length > 0);
+                const results = productList.slice(0, limit);
                 res.status(200).send({ complaints: results, totalResults: productList.length });
             } else {
                 const limit = req.query.limit ? parseInt(req.query.limit) : 10;
                 const offset = (req.query.pageNo - 1)*limit;
-                let productList = await Product.find({ sellerId })
-                                                   .sort({ createdAt: -1 })
-                                                   .skip(offset)
-                                                   .limit(limit);
+                let productList = await Product.find({ sellerId }).sort({ createdAt: -1 })
                 productList = productList.filter((product) => product.complaints.length > 0);
-                res.status(200).send({ complaints: productList });
+                const results = productList.slice(offset, offset+limit);
+                res.status(200).send({ complaints: results });
             }
         } catch(e) {
             res.status(503).send({ error: 'Unable to fetch your products and complaints!' })
