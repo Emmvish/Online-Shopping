@@ -124,12 +124,7 @@ router.get('/products', auth, async (req, res) => {
                 const results = await Product.find({ sellerId })
                                              .sort({ createdAt: -1 });
                 const limit = req.query.limit ? parseInt(req.query.limit) : 10;
-                const products = [];
-                for( let i = 0; i < limit; i++ ) {
-                    if(results[i]){
-                        products.push(results[i]);
-                    }
-                }
+                const products = results.slice(0, limit);
                 res.status(201).send({ products, totalResults: results.length });
             } else {
                 const limit = req.query.limit ? parseInt(req.query.limit) : 10;
