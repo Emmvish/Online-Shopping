@@ -30,7 +30,7 @@ const router = async (service, route, method, query, data, authHeader = null) =>
     } catch (e) {
         response = e.response
     }
-    return response;
+    return { data: response.data, status: response.status }
 }
 
 module.exports = router;
