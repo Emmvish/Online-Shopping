@@ -9,16 +9,18 @@ const app = express();
 app.use(express.json());
 
 app.post("/sendRequest", async (req, res) => {
-    const { service, route, method, data } = req.body;
-    const query = req.query;
-    const authHeader = req.headers.Authorization;
-    let response;
-    if(!!authHeader) {
-        response = await router(service, route, method, query, data, authHeader);
-    } else {
-        response = await router(service, route, method, query, data, null);
+    try {
+        const requests = req.body.requests;
+        const promises = [];
+        requests.forEach((request) => {
+            const { service, route, method, query, data, authHeader = null } = request;
+            promises.push(router(service, route, method, query, data, authHeader))
+        })
+        const responses = await Promise.allSettled(promises);
+        res.status(200).send({ responses });
+    } catch(e) {
+        res.status(503).send({ message: 'Service Unavailable!' })
     }
-    res.status(response.status).send({ data: response.data, status: response.status });
 })
 
 app.listen(serverPort, ()=>{
