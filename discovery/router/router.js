@@ -5,28 +5,19 @@ const services = require('../services/services')
 const router = async (service, route, method, query, data, authHeader = null) => {
     let response;
     try {
-        if(!!authHeader) {
-            response = await axios({
-                method,
-                headers: {
-                    Authorization: authHeader
-                },
-                url: services[service] + route,
-                params: {
-                    ...query
-                },
-                data
-            })
-        } else {
-            response = await axios({
-                method,
-                url: services[service] + route,
-                params: {
-                    ...query
-                },
-                data
-            })
+        const requestObj = {
+            method,
+            headers: { },
+            url: services[service] + route,
+            params: {
+                ...query
+            },
+            data
         }
+        if(!!authHeader) {
+            requestObj.headers.Authorization = authHeader;
+        } 
+        response = await axios(requestObj);
     } catch (e) {
         response = e.response
     }
