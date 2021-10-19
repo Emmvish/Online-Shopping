@@ -16,7 +16,10 @@ app.post("/sendRequest", async (req, res) => {
             const { service, route, method, query, data, authHeader = null } = request;
             promises.push(router(service, route, method, query, data, authHeader))
         })
-        const responses = await Promise.allSettled(promises);
+        let responses = await Promise.allSettled(promises);
+        responses = responses.map((response) => {
+            return response.value.data;
+        }
         res.status(200).send({ responses });
     } catch(e) {
         res.status(503).send({ message: 'Service Unavailable!' })
