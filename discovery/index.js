@@ -18,7 +18,7 @@ app.post("/sendRequest", async (req, res) => {
         })
         let responses = await Promise.allSettled(promises);
         responses = responses.map((response) => {
-            return response.value.data;
+            return response.value;
         }
         res.status(200).send({ responses });
     } catch(e) {
